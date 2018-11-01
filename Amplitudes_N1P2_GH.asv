@@ -566,7 +566,7 @@ end
 
 for ib=[1,2,3,4,5]
     
-    allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
+    allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib})(:,1),includeSubjects),:);
     for i=1:length(formulas)
         lmes{ib,i} = fitlme(allTables.(blocks{ib}),formulas{i});
     end
