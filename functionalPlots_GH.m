@@ -17,6 +17,13 @@ blocks = Bnames;
 %% plot
 
 %load peak amplitudes
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+whichpeaks = {'N1','P2'};
+%load peaks
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+nCond = size(allGrandcon_times{1},2);
 
 
 
