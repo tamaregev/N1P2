@@ -16,140 +16,6 @@ Bcodes = [10,20,30,40,50]';
 Bcodes_names = table(Bnames,Bcodes);
 blocks = Bnames;
 
-%% peak detection - old
-if 1 %params
-    electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
-    bls = [1:5];
-    whichpeak = 'N1';
-    disp(whichpeak)
-    switch whichpeak
-        case 'N1'
-            pwin = [50,150];%100 +- 50%ms    
-            positive_peak = false;
-            addtag = '';
-        case 'P2'
-            pwin = [130,250];%190 + - 60%ms
-            positive_peak = true;
-            addtag = '';
-    end
-    select_largest = true;
-    plotflag = false;%plot automatically selected peaks.
-    mode = 'Bp1-20';
-    matrixdate = '17-Oct-2018';
-    srate = 512;
-    bslwin = [-0.1,0];
-end
-allPeak_smpls = cell(1,length(blocks));
-allPeak_amps = cell(1,length(blocks));
-for bl=bls
-    disp(blocks{bl})
-    load([grandFolder filesep 'grandMatrix_condComb_' mode '_bl' blocks{bl} '_' matrixdate])
-    %baseline
-    newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
-    grandMatrix = bsxfun(@minus,grandMatrix,mean(grandMatrix(newbsl,:,:,:,:),1));    
-    t=0:1/srate:(size(grandMatrix,1)-1)/srate;t=t+winbegin;t=t*1000;
-    figure
-    [peak_smpls,  peak_amps, manuals ] = PeakDetection(grandMatrix, t, electrodeName, pwin, positive_peak, select_largest, plotflag );
-    allPeak_smpls{bl} = peak_smpls;
-    allPeak_amps{bl} = peak_amps; 
-end
-save([mixedFolder whichpeak '_' electrodeName '_' addtag date],'allPeak_smpls','allPeak_amps','t','blocks','bls','matrixdate','bslwin','pwin','electrodeName','manuals')
-% saved:
-% peakdates = {'17-Oct-2018','17-Oct-2018'};
-% whichpeaks = {'N1','P2'};
-%% peak detection - new
-% plot all conditions together for each subject (per block)
-% arrange all conditions randomly
-
-if 1 %params
-    electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
-    bls = [1:5];
-    whichpeak = 'N1';
-    disp(whichpeak)
-    switch whichpeak
-        case 'N1'
-            pwin = [50,150];%100 +- 50%ms    
-            positive_peak = false;
-            addtag = '';
-        case 'P2'
-            pwin = [130,250];%190 + - 60%ms
-            positive_peak = true;
-            addtag = '';
-    end
-    select_largest = true;
-    plotflag = true;%plot automatically selected peaks.
-    mode = 'Bp1-20';
-    matrixdate = '17-Oct-2018';
-    srate = 512;
-    bslwin = [-0.1,0];
-end
-allPeak_smpls = cell(1,length(blocks));
-allPeak_amps = cell(1,length(blocks));
-allPeak_times = cell(1,length(blocks));
-allManuals = cell(1,length(blocks));
-for bl= bls
-    disp(blocks{bl}) 
-    load([grandFolder filesep 'grandMatrix_condComb_' mode '_bl' blocks{bl} '_' matrixdate])
-    %baseline
-    newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
-    grandMatrix = bsxfun(@minus,grandMatrix,mean(grandMatrix(newbsl,:,:,:,:),1));    
-    t=0:1/srate:(size(grandMatrix,1)-1)/srate;t=t+winbegin;t=t*1000;
-    %peak detection
-    [peak_smpls,  peak_amps, peak_times, manuals ] = PeakDetection_N1P2(grandMatrix, whichSubjects, t, electrodeName, pwin, positive_peak, select_largest, plotflag, blocks{bl});
-    allPeak_smpls{bl} = peak_smpls;
-    allPeak_amps{bl} = peak_amps; 
-    allPeak_times{bl} = peak_times;
-    allManuals{bl} = manuals;
-end
-disp('saving...')
-save([mixedFolder whichpeak '_' electrodeName '_' addtag date],'allPeak_smpls','allPeak_amps','allPeak_times','t','blocks','bls','matrixdate','bslwin','pwin','electrodeName','allManuals')
-disp('done')
-%% peak detection - new 2
-% as before but add the ERP of all prevcon together and all 4 prevcons arranged under, randomly within the column 
-if 1 %params
-    electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
-    bls = [1:5];
-    whichpeak = 'P2';
-    disp(whichpeak)
-    switch whichpeak
-        case 'N1'
-            pwin = [50,150];%100 +- 50%ms    
-            positive_peak = false;
-            addtag = '';
-        case 'P2'
-            pwin = [130,250];%190 + - 60%ms
-            positive_peak = true;
-            addtag = '';
-    end
-    select_largest = true;
-    plotflag = true;%plot automatically selected peaks.
-    mode = 'Bp1-20';
-    matrixdate = '17-Oct-2018';
-    srate = 512;
-    bslwin = [-0.1,0];
-end
-allPeak_smpls = cell(1,length(blocks));
-allPeak_amps = cell(1,length(blocks));
-allPeak_times = cell(1,length(blocks));
-allManuals = cell(1,length(blocks));
-
-for bl= bls
-    disp(blocks{bl}) 
-    load([grandFolder filesep 'grandMatrix_condComb_' mode '_bl' blocks{bl} '_' matrixdate])
-    %baseline
-    newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
-    grandMatrix = bsxfun(@minus,grandMatrix,mean(grandMatrix(newbsl,:,:,:,:),1));    
-    t=0:1/srate:(size(grandMatrix,1)-1)/srate;t=t+winbegin;t=t*1000;
-    %peak detection
-    [peak_smpls,  peak_amps, peak_times, manuals ] = PeakDetection_N1P2_2(grandMatrix, whichSubjects, t, electrodeName, pwin, positive_peak, select_largest, plotflag, blocks{bl});
-    allPeak_smpls{bl} = peak_smpls;
-    allPeak_amps{bl} = peak_amps;
-    allPeak_times{bl} = peak_times;
-    allManuals{bl} = manuals;
-end
-disp('saving...')
-save([mixedFolder whichpeak '_' electrodeName '_' addtag date],'allPeak_smpls','allPeak_amps','allPeak_times','t','blocks','bls','matrixdate','bslwin','pwin','electrodeName','allManuals')
-disp('done')
 %% peak detection - new 3
 % find peaks of the grand cond ERP, average voltage of prevcons accordingly
 matrixdate = '29-Oct-2018';
@@ -163,8 +29,8 @@ if 1 %params
     addtag = '';
     dt = 5;%ms before and after peak - window for calculating N1-P2 amp
     select_largest = true;
-    plotflag = false;%plot automatically selected peaks.
-    pauseflag = false;
+    plotflag = true;%plot automatically selected peaks.
+    pauseflag = true;
     mode = 'Bp1-20';
     srate = 512;
     bslwin = [-0.1,0];
@@ -196,6 +62,67 @@ disp(['saving ' mixedFolder 'N1P2_' electrodeName '_' addtag date ' ...'] )
 save([mixedFolder 'N1P2_' electrodeName '_' addtag date],'allPeak_smpls','allPeak_amps','allPeak_times','allGrandcon_as_median','allGrandcon_amps','allGrandcon_times','t','dt','mode','blocks','bls','matrixdate','bslwin','pwins','electrodeName')
 disp('done')
 
+%% check that N1 is before P2
+if 1 %params
+    electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+    addtag = '';
+    peakdate = '30-Oct-2018';
+    whichpeaks = {'N1','P2'};
+    include = false;%include subjects for which there was a manual inspection
+end
+%load peaks
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+nCond = size(allGrandcon_times{1},2);
+
+for bl=1:length(allGrandcon_times)
+    tN1 = allGrandcon_times{bl}(:,:,1);
+    tP2 = allGrandcon_times{bl}(:,:,2);
+    [s, c] = find((tP2 - tN1)<=0);
+    if ~isempty(s)
+        disp(['Problem with s ' num2str(s) ', cond ' num2str(c)])
+    end
+end
+
+%% compare grandcond peaks and mean prevcons
+if 1 %params
+    electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+    addtag = '';
+    peakdate = '30-Oct-2018';
+    whichpeaks = {'N1','P2'};
+    include = false;%include subjects for which there was a manual inspection
+end
+%load peaks
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+nCond = size(allGrandcon_times{1},2);
+%TODO
+
+ERPfigure
+for ipeak = 1:2
+    for bl=1:length(allPeak_amps)
+        grandcon = allGrandcon_amps{bl}(:,:,ipeak);
+        mprevcon = nanmean(allPeak_amps{bl}(:,:,:,ipeak),3);
+        subplot(2,5,(ipeak-1)*length(allPeak_amps)+bl)
+        hold on
+        for is=1:size(grandcon,1)
+            for ic=1:size(grandcon,2)
+                if ~isnan(grandcon(is,ic))
+                    plot(grandcon(is,ic),mprevcon(is,ic),'.','Markersize',10)
+    %                 text(grandcon(is,ic),mprevcon(is,ic),[num2str(is) ', ' num2str(ic)])
+                end
+            end
+        end
+        xlabel('grandcon peaks');ylabel('mean of prevcons')
+        hold on
+        xlim([min(min(grandcon)) max(max(grandcon))]);
+        ylim([min(min(mprevcon)) max(max(mprevcon))]);
+        xlims = get(gca,'xlim');
+        ylims = get(gca,'ylim');
+        extrem(1) = min([xlims(1) ylims(1)]);
+        extrem(2) = max([xlims(2) ylims(2)]);
+        plot(extrem,extrem,'k-.')
+        title(whichpeaks{ipeak})
+    end
+end
 %% plot bargraph 5 cond N1
 if 1 %params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
@@ -541,8 +468,6 @@ include = false;%include subjects for which time of grandcon peak was determined
 
 load([mixedFolder 'LMEtables_combined_' savedate ], 'allTables')
 blocks = {'b1','b2a','b2b','b3a','b3b'};
-savedate = '17-Oct-2018';
-load([mixedFolder 'LMEtables_combined_' savedate ])
 formulas = {'N1~dist_mean+size_jump+currMIDI+(1|subject)','N1~dist_mean+currMIDI+(1|subject)','N1~dist_mean+(1|subject)',...
             'P2~dist_mean+size_jump+currMIDI+(1|subject)','P2~dist_mean+currMIDI+(1|subject)','P2~size_jump+(1|subject)'};
 
@@ -566,7 +491,7 @@ end
 
 for ib=[1,2,3,4,5]
     
-    allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib})(:,1),includeSubjects),:);
+    allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
     for i=1:length(formulas)
         lmes{ib,i} = fitlme(allTables.(blocks{ib}),formulas{i});
     end

@@ -14,18 +14,13 @@ Bnames = {'1','2a','2b','3a','3b'}';
 Bcodes = [10,20,30,40,50]';
 Bcodes_names = table(Bnames,Bcodes);
 blocks = Bnames;
-%% plot all subj, cond, prevcond
-if 1 %params
-    electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
-    addtag = '';
-    peakdate = '30-Oct-2018';
-    whichpeaks = {'N1','P2'};
-    include = false;%include subjects for which there was a manual inspection
-end
+%% plot all cond prevcond
+
 %load tables
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 nCond = size(allGrandcon_times{1},2);
 savedate = '31-Oct-2018';
+include = false;%include subjects for which time of grandcon peak was determined due to median
 load([mixedFolder 'LMEtables_combined_' savedate ], 'allTables')
 blocks = {'b1','b2a','b2b','b3a','b3b'};
 
@@ -48,6 +43,7 @@ for ib=[1,2,3,4,5]
     allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
 end
 ERPfigure
+whichPeaks = {'N1','P2'};
 xvars = {'currMIDI','dist_mean','size_jump'};
 xnames = {'curr freq','mean freq','prev freq'};
 nx=length(xvars);
@@ -69,8 +65,5 @@ for ipeak = 1:2
         legend('data','linear fit','parabolic fit')
     end
 end
-
-%% plot all cond, prevcond
-
 
 
