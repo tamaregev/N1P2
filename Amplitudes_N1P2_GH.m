@@ -497,4 +497,3 @@ for ib=[1,2,3,4,5]
         lmes{ib,i} = fitlme(allTables.(blocks{ib}),formulas{i});
     end
 end
-
