@@ -14,6 +14,7 @@ Bnames = {'1','2a','2b','3a','3b'}';
 Bcodes = [10,20,30,40,50]';
 Bcodes_names = table(Bnames,Bcodes);
 blocks = Bnames;
+bls=1:5;
 %% plot all subj, cond, prevcond
 if 1 %params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
@@ -84,16 +85,17 @@ if 1 %params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
     addtag = '';
     peakdate = '30-Oct-2018';
-    whichpeaks = {'N1','P2'};
     include = false;%include subjects for which there was a manual inspection
 end
 %load tables
-load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])%loaded for allGrandcon_as_median
 nCond = size(allGrandcon_times{1},2);
 savedate = '31-Oct-2018';
 load([mixedFolder 'LMEtables_combined_' savedate ], 'allTables')
 blocks = {'b1','b2a','b2b','b3a','b3b'};
-markers = {'o','+','d','*','s'};
+ibs = 1:5;
+relCols = 2:7;
+%exclude subjects with no clear N1 or P2:
 if include
     allSubjects = 1:length(Subjects);
     includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
@@ -109,55 +111,48 @@ else
     allSubjects = 1:length(Subjects);
     includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
 end
-for ib=[1,2,3,4,5]
+for ib=ibs
     allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
 end
-ERPfigure
-xvars = {'currMIDI','dist_mean','size_jump'};
-xnames = {'curr. freq.','dist. from mean freq.','dist. from prev. freq.'};
 
-nx=length(xvars);
-for ipeak = 1:2
-    peak = whichpeaks{ipeak};
-    for ix=1:length(xvars)
-        subplot(2,3,(ipeak-1)*nx+ix)
-        x=nan(1,5*4*5);y=nan(1,5*4*5);
-        for ib=1:length(blocks)
-            T = allTables.(blocks{ib});
-            t = T(1,2:7);
-            nlines = height(T(T.subject==2,:));
-            meanPeaks = nan(nlines,1);
-            errPeaks = nan(nlines,1);
-            for line = 1:nlines
-                tl = T(line,:);
-                tlallS = T(T.currMIDI==tl.currMIDI & T.prevMIDI==tl.prevMIDI,:);
-                meanPeaks(line) = mean(tlallS.(peak));
-                CI = Confidence(tlallS.(peak));
-                errPeaks(line) = abs(meanPeaks(line)-CI(1));
-                t(line,:) = T(line,2:7);
-            end
-            from = (ib-1)*nlines+1;
-            to = ib*nlines;
-            x(from:to) = t.(xvars{ix});
-            y(from:to) = meanPeaks;
-            plot(x(from:to),y(from:to),markers{ib},'MarkerSize',4,'MarkerEdgeColor','k');
-            hold on
-        end
-        %[xs,I] = sort(x);
-        %y=y(I);
-%         scatter(x,y,10,'filled','MarkerFaceColor',[0.5 0.5 0.5]);
-%         title([peak ' (' xnames{ix} ')'])
-        ylabel([peak ' [\muV]'])
-        xlabel([xnames{ix} ' [MIDI]'])
-        hold on
-        p1=polyfit(x,y,1);
-        f1=polyval(p1,x);
-        plot(x,f1,'r','linewidth',3)
-        p2=polyfit(x,y,2);
-        f2=polyval(p2,x);
-        
-        plot(x,f2,'.b','MarkerSize',20)
-        set(gca,'fontsize',12)
-    end
+hf = plotFunctional_N1P2( allTables, relCols, blocks, ibs );
+
+suptitle(['Exp: ''' ExpName '''.  N=' num2str(length(includeSubjects))])
+
+%% plot frequency spread of all blocks
+s=10;
+load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s} '_expdata.mat'])
+frequencies = cell(size(bls));
+for ib=1:length(bls)
+    bl=bls(ib);
+    frequencies{bl} = expdata.Passive.blocks(bl).toneSynth.frequencies;
 end
-legend('b1','b2','b3','b4','b5','linear fit','parabolic fit')
+
+hf=ERPfigure;
+set(hf,'Position',[100 100 500 400])
+linethick = 10;
+fromx = 0; tox=30;
+fromy = 200;toy = 2500;
+
+for ib=1:length(bls)
+    subplot(1,length(bls),ib); 
+    ax(ib) = gca;
+    bl=bls(ib);
+    for i=1:length(frequencies{bl})
+        line([10, 10+linethick],[frequencies{bl}{i}, frequencies{bl}{i}],'linew',4)
+        hold on
+    end
+    title(strrep(blocks{bl},'_',' '))
+    if ib==1
+        ylabel('log frequencies [Hz]','fontsize',20);
+    else
+        set(gca,'ytick',[])
+    end                       
+    set(gca,'yscale','log')
+    set(gca,'xtick',[])
+end
+
+linkaxes(ax)
+
+axis([fromx, tox, fromy, toy])
+

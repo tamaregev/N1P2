@@ -50,7 +50,7 @@ for bl= bls
     grandMatrix = bsxfun(@minus,grandMatrix,mean(grandMatrix(newbsl,:,:,:,:),1));    
     t=0:1/srate:(size(grandMatrix,1)-1)/srate;t=t+winbegin;t=t*1000;
     %peak detection
-    [peak_smpls,  peak_amps, peak_times, grandcon_as_median,  grandcon_peak_times, grandcon_peak_amps ] = PeakDetection_N1P2_3(grandMatrix, whichSubjects, t, electrodeName, dt, pwins, positive_peaks, select_largest, plotflag, pauseflag, blocks{bl});
+    [peak_smpls,  peak_amps, peak_times, grandcon_as_median,  grandcon_peak_times, grandcon_peak_amps ] = PeakDetection_N1P2_GH(grandMatrix, whichSubjects, t, electrodeName, dt, pwins, positive_peaks, select_largest, plotflag, pauseflag, blocks{bl});
     allPeak_smpls{:,bl} = peak_smpls;
     allPeak_amps{:,bl} = peak_amps;
     allPeak_times{:,bl} = peak_times;
@@ -175,21 +175,26 @@ for ipeak = 1
         end        
             
     end
-    bxlocs = bxlocs + ones(size(bxlocs)).*(1+(rand(size(bpeaks))-0.5)/100) ;
+    bxlocs_noisy = bxlocs + ones(size(bxlocs)).*(1+(rand(size(bpeaks))-0.5)/100) ;
     
     hf = figure;
     set(hf,'Position',[100 100 1000 700])
     h = barwitherr(peak_errs, peak_means);% Plot with errorbar
     hold on
-    for ii=1:size(bxlocs,1)
-        scatter(bxlocs(ii,:),bpeaks(ii,:),10,'filled','MarkerFaceColor',[0.5 0.5 0.5])
-    end
+    %add all participants:
+%     for ii=1:size(bxlocs,1)
+%         scatter(bxlocs_noisy(ii,:),bpeaks(ii,:),10,'filled','MarkerFaceColor',[0.5 0.5 0.5])
+%     end
     set(gca,'xticklabels',blocks)
+
+%     boxplot(bpeaks,'Position',bxlocs(1,:)+1)
+    
     set(gca,'fontsize',14)
-    title([whichpeaks{ipeak} ' of all conditions'],'fontsize',16)
+    title([whichpeaks{ipeak} ' of all conditions. Exp: ''' ExpName '''.  N=' num2str(length(includeSubjects))],'fontsize',16)
     legend({'tone 1','tone 2','tone 3','tone 4','tone 5'},'Location','northeastoutside')
     ylabel(['mean amplitude ± CI 5-95%, \muV'])
 end
+
 %% boxplot
 %depends on previous
 pos = zeros(1,25);
@@ -292,7 +297,7 @@ for ipeak = 1
         bxlocs(:,((bl-1)*nCond+1):((bl-1)*nCond+nCond))=repmat(1:5,[length(includeSubjects),1]).*(1+(rand(length(includeSubjects),5)-0.5)/10);
         violinplot(bpeaks(:,((bl-1)*nCond+1):((bl-1)*nCond+nCond)),{'1','2','3','4','5'})
         hold on
-        ylim([-6 2])
+        ylim([-5.5 1.5])
         plot(1:5,mean(cbpeaks),'+','MarkerSize',16,'MarkerEdgeColor','k')
 %         for ii=1:size(bxlocs,1)
 %             scatter(bxlocs(ii,((bl-1)*nCond+1):((bl-1)*nCond+nCond)),bpeaks(ii,((bl-1)*nCond+1):((bl-1)*nCond+nCond)),10,'filled','MarkerFaceColor',[0.5 0.5 0.5])
@@ -303,8 +308,9 @@ for ipeak = 1
         end
         title(['Condition ' num2str(bl)])
     end
-    suptitle([whichpeaks{ipeak} ' of all conditions'])
-    
+
+    suptitle([whichpeaks{ipeak} ' of all conditions. Exp: ''' ExpName '''.  N=' num2str(length(includeSubjects))])
+
 end
 
 %% plot bargraph P2 prevcond
@@ -491,7 +497,6 @@ else
 end
 
 for ib=[1,2,3,4,5]
-    
     allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
     for i=1:length(formulas)
         lmes{ib,i} = fitlme(allTables.(blocks{ib}),formulas{i});
