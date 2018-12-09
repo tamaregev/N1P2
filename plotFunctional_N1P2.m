@@ -45,7 +45,13 @@ for ipeak = 1:2
             from = (iib-1)*nlines+1;
             to = iib*nlines;
             x(from:to) = t.(xvars{ix});
-            y(from:to) = meanPeaks;
+            
+            switch peak
+                case 'N1'
+                    y(from:to) = -meanPeaks;
+                case 'P2'
+                    y(from:to) = meanPeaks;
+            end
             plot(x(from:to),y(from:to),markers{ib},'MarkerSize',8,'MarkerEdgeColor',cmap(ib,:),'linewidth',1);
             %plot(x(from:to),y(from:to),'o','MarkerSize',4,'MarkerFaceColor',cmap(ib,:),'MarkerEdgeColor',cmap(ib,:));
             hold on

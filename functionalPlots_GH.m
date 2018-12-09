@@ -114,7 +114,7 @@ end
 for ib=ibs
     allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
 end
-
+%plot here:
 hf = plotFunctional_N1P2( allTables, relCols, blocks, ibs );
 
 suptitle(['Exp: ''' ExpName '''.  N=' num2str(length(includeSubjects))])

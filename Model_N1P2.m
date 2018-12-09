@@ -74,7 +74,7 @@ for s=whichSubjects
     
     %load expdata and markers
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
-    load([EDATfolder FileName '_expdata.mat' ])
+    load(['D' EDATfolder(2:end) FileName '_expdata.mat' ])
     %load and read markers
     VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
     [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
@@ -135,42 +135,67 @@ for s=whichSubjects
 
     suptitle(['Subj ' num2str(s) ', Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
 end
-%% calculate RA - all participants
+%% calculate RA - all participants, taus, sigmas
+
+mkdir(modelFolder,date)
+saveFolder = [modelFolder date];
 
 %parameters:
-    R0=0.5;
-    phaseName = 'Passive';
-    sigma = 10;%MIDI
-    tau = 1.8;%seconds
-    SOA_threshold = 0.6;%seconds
-    Mis = [20:130]';
+R0=0.5;
+phaseName = 'Passive';
+sigmas = 1:18;%MIDI
+taus = 0.2:0.2:5;%seconds
+SOA_threshold = 0.6;%seconds
+Mis = (20:130)';
 
 whichSubjects = sbjcts(~ismember(sbjcts,badSubjects));
 
-for s=whichSubjects
-    ticsubj = tic;
-    %load expdata and markers
-    FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
-    load([EDATfolder FileName '_expdata.mat' ])
-    %load and read markers
-    VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
-    [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
+for sigma = sigmas
+    for tau = taus
+        tictausig = tic;
+        for s=whichSubjects
+            ticsubj = tic;
+            disp(['Subj = ' num2str(s) ', sigma = ' num2str(sigma) ', tau = ' num2str(tau) ])
 
-    %calculate expected activity RA
-    [ RA, smpls, stimCodes, seqInds ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
+            %load expdata and markers
+            FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
+            load(['D' EDATfolder(2:end) FileName '_expdata.mat' ])
+            %load and read markers
+            VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
+            [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
 
-    if s==whichSubjects(1)
-        RAs = nan([whichSubjects(end),size(RA)]);
-        smplss = nan([whichSubjects(end),size(smpls)]); 
-        stimCodess = nan([whichSubjects(end),size(stimCodes)]);
-        seqIndss = nan([whichSubjects(end),size(seqInds)]);        
+            %calculate expected activity RA
+            if sigma == sigma(1) && tau == tau(1)
+                [ RA, smpls, stimCodes, seqInds ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
+            else
+                [ RA, ~, ~, ~ ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
+            end
+            if s==whichSubjects(1)
+                RAs = nan([whichSubjects(end),size(RA)]);
+                smplss = nan([whichSubjects(end),size(smpls)]); 
+                stimCodess = nan([whichSubjects(end),size(stimCodes)]);
+                seqIndss = nan([whichSubjects(end),size(seqInds)]);        
+            end
+            RAs(s,:,:,:,:) = RA;
+        
+            if sigma == sigma(1) && tau == tau(1)            
+                smplss(s,:,:,:) = smpls;
+                stimCodess(s,:,:,:) = stimCodes;
+                seqIndss(s,:,:,:) = seqInds;
+            end
+            fclose('all');
+            disp(['Done Subj ' Subjects{s} ' in ' num2str(toc(ticsubj)) ' sec.'])
+        end
+        disp(['...saving sigma = ' num2str(sigma) ', tau = ' num2str(tau) '...'])
+        save([saveFolder filesep 'RAs_Sig' num2str(find(sigmas==sigma)) 'Tau' num2str(find(taus==tau)) '_' date],'RAs')
+        disp(['done tausig in ' num2str(toc(tictausig)) 'sec.'])
     end
-    RAs(s,:,:,:,:) = RA;
-    smplss(s,:,:,:) = smpls;
-    stimCodess(s,:,:,:) = stimCodes;
-    seqIndss(s,:,:,:) = seqInds;
-    disp(['Done Subj ' Subjects{s} ' in ' num2str(toc(ticsubj)) ' sec.'])
 end
-save([modelFolder 'RAs_' date],'RAs','smplss','stimCodess','Mis','seqIndss')
-
+save([saveFolder 'Metadata_' date],'smplss','stimCodess','seqIndss')
+save([saveFolder 'Params_' date],'Mis','sigmas','taus')
+        
 %% compare to ERPs
+RAdate = '06-Dec-2018';
+load([modelFolder 'RAs_' RAdate])
+
+RApeaks = nan();
