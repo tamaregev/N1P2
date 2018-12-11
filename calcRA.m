@@ -31,9 +31,11 @@ end
 nTrialsPerBlock = expdata.(phaseName).blocks(1).num_trials;
 nStim = length(expdata.(phaseName).blocks(1).CODE_NOTES);
 whichBlocks = find(block_list==1);
-if exist('Mis', 'var')
-    nChans = length(Mis);    
-else
+if ~isnan(Mis)
+    nChans = length(Mis);
+    isnanMis = false;
+else%Mis is nan
+    isnanMis = true;
     nChans = nStim;
 end
 RA = nan(nBlockTypes,length(whichBlocks),nChans,nTrialsPerBlock);%types x sequences x channels x timepoints    
@@ -43,7 +45,7 @@ seqInd = nan(nBlockTypes,length(whichBlocks),nTrialsPerBlock);%types x sequences
 
 for ibt = 1:nBlockTypes
     MIDIs = expdata.(phaseName).blocks(ibt).MIDIs;%MIDIs of all stimuli
-    if ~exist('Mis', 'var')
+    if isnanMis
         Mis = nan(length(MIDIs),1);
         for im = 1:length(MIDIs)
             Mis(im) = MIDIs{im};
