@@ -12,7 +12,7 @@ cmap = [1 0 1;...
         1 0.6 0;...
         0 0.7 0;...
         0 0 1 ];
-
+fos = 12;
 
 hf=ERPfigure;
 set(gcf,'units','normalized','outerposition',[0 0 1 1])
@@ -48,7 +48,7 @@ for ipeak = 1:2
             
             switch peak
                 case 'N1'
-                    y(from:to) = -meanPeaks;
+                    y(from:to) = meanPeaks;
                 case 'P2'
                     y(from:to) = meanPeaks;
             end
@@ -76,24 +76,28 @@ for ipeak = 1:2
         iib=0;
         for ib=ibs
             iib=iib+1;
-            text(xlim(2)-dx,ylim(2)-(iib)*dy,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',18);
+            if ipeak == 1
+                text(xlim(1),ylim(1)+5*dy-(iib)*dy,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
+            else
+                text(xlim(1),ylim(2)-(iib)*dy+dy/2,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
+            end
         end
-        %[xs,I] = sort(x);
-        %y=y(I);
         [Rtot,ptot]=corrcoef(x,y);
-        text(xlim(2)-dx,ylim(2)-(iib+1)*dy,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',18);
-%         p2=polyfit(x,y,2);
-%         f2=polyval(p2,x);
-%         plot(x,f2,'.b','MarkerSize',20)
+        if ipeak ==1
+            text(xlim(1),ylim(1)+5*dy-(iib+1)*dy,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
+        else
+            text(xlim(1),ylim(2)-(iib+1)*dy+dy/2,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
+        end
     end
 end
 legendstring = {};
 for iib=1:length(ibs)
-    legendstring(iib)={['b' num2str(ibs(iib))]};
+    %legendstring(iib)={['b' num2str(ibs(iib))]};
+    legendstring(iib)={['Condition ' num2str(ibs(iib))]};
 end
     
 lh=legend(legendstring,'linear fit');
-set(lh,'position',[0.93 0.33 0.05 0.1],'fontsize',18)
+set(lh,'position',[0.93 0.33 0.05 0.1],'fontsize',16)
 
 end
 

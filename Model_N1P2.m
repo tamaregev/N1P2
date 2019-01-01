@@ -4,7 +4,8 @@
 cd('L:\Experiments\N1P2\Analysis\N1P2_GH')
 Definitions_N1P2
 sbjcts = 1:37;
-whichSubjects = sbjcts(~ismember(sbjcts,badSubjects));
+mss = [5,14];
+whichSubjects = sbjcts(~ismember(sbjcts,[badSubjects,mss]));
 
 grandFolder = [AnalysisFolder 'grandAverage'];
 mixedFolder = [AnalysisFolder 'MixedModel\'];
@@ -62,9 +63,7 @@ bigDifInd = find(difs_reals>=0.02);
 compareSOA(bigDifInd,:)
 %correct SOA is expdata_measuredSOA, because it is based on measured timing
 %% calculate RA and plot - one participant
-    
-whichSubjects = sbjcts(~ismember(sbjcts,badSubjects));
-    
+        
 %parameters:
 R0=0.5;
 phaseName = 'Passive';
@@ -154,8 +153,8 @@ saveFolder = [modelFolder date filesep];
 R0=0.5;
 phaseName = 'Passive';
 %sigmas = [1:12,14,16,18];%MIDI
-sigmas = [1:18];%MIDI
-taus = [0.2:0.2:5];%seconds
+sigmas = [7];%MIDI
+taus = [3];%seconds
 SOA_threshold = 0.6;%seconds
 %Mis = (20:130)';
 Mis = nan; %for having only the 5 Mis of the stimuli
@@ -164,7 +163,7 @@ artIndss = cell(size(whichSubjects));
 tictot = tic;
 for s=whichSubjects
     ticsubj = tic;
-    fprintf(['subj %2f loading...'],s)
+    fprintf(['subj %2.0f loading...'],s)
     %load expdata and markers
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
     load(['D' EDATfolder(2:end) FileName '_expdata.mat' ])
@@ -175,7 +174,7 @@ for s=whichSubjects
     fprintf('Done\n')
     for sigma = sigmas
         ticsig = tic;
-        fprintf(['Subj = %2f, sigma = %2f' num2str(sigma)],s,sigma)
+        fprintf(['Subj = %2.0f, sigma = %2.2f'],s,sigma)
         for tau = taus
             %calculate expected activity RA
             if sigma == sigmas(1) && tau == taus(1)
@@ -202,7 +201,7 @@ for s=whichSubjects
             fclose('all');
 %             disp(['Done in ' num2str(toc(ticsigtau)) ' sec.'])
         end
-        fprintf(['Done in %2f sec.\n'],toc(ticsig))
+        fprintf(['Done in %2.1f sec.\n'],toc(ticsig))
     end
     disp(['Done Subj ' Subjects{s} ' in ' num2str(toc(ticsubj)) ' sec.'])
 end
@@ -213,10 +212,11 @@ save([saveFolder 'Metadata'],'smplss','stimCodess','seqIndss','artIndss')
 save([saveFolder 'Params'],'sigmas','taus','Mis','R0','SOA_threshold')
 disp(['Done all in ' num2str(toc(tictot)) ' sec.'])
 
-%% compare to ERPs-
+%% compare to ERPs -
 %% calc. expected peaks
-RAdate = '10-Dec-2018';
+RAdate = '23-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
+saveFolder = loadFolder;
 
 tic
 fprintf(['Loading...'])
@@ -227,7 +227,7 @@ fprintf(['Done in %4.1f sec \n'], toc)
 
 nStim = 5;
 %initiatize peaks array
-RApeaks = nan(whichSubjects(end),length(Bnames),nStim,nStim,length(sigmas),length(taus));
+RApeaks = nan(whichSubjects(end),length(Bnames),nStim,nStim,length(sigmas),length(taus));%subjects x types x cond x prevcond x sigmas x taus
 conditions = {'note 1','note 2','note 3','note 4','note 5'};
 prevConditions = {'note 1','note 2','note 3','note 4','note 5'};
 STIMcodes = [1,2,3,4,5];
@@ -249,14 +249,23 @@ for bl = 1:5
     grandRA = calcGrandRA_CondPrev( bl, whichSubjects, RAs_SigTau, EventCodes, prevEventCodes, stimCodess, smplss, seqIndss, artIndss);
     RApeaks(:,bl,:,:,:,:) = squeeze(grandRA);
 end
-save([modelFolder 'RApeaks'],'RApeaks')
+save([saveFolder 'RApeaks'],'RApeaks')
+%% Documentation of runs
+%19-Dec-2018 : full
+%23-Dec-2018 : full with larger sigmas, half resolution, only odd sigmas
+%24-Dec-2018 : smaller taus
+%27-Dec-2018 : smaller sigmas
 %% average and plot U-shape
-load([modelFolder 'RApeaks'])
+RAdate = '23-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
 load([loadFolder 'Metadata'])
 
+plotIndividual = false;
 phaseName = 'Passive';
-sigma = 10;
-tau = 1.8;
+sigma = 7;
+tau = 2;
 nStim = 5;
 
 ERRA = nan(whichSubjects(end),nStim,size(stimCodess,2));
@@ -271,12 +280,15 @@ for s = whichSubjects
         whichCodes = unique(Codes);
         ERRA(s,:,it) = nanmean(RApeaks(s,it,:,:,sigmas==sigma,taus==tau),4);
     end
-    ERPfigure;
-    plot(squeeze(ERRA(s,:,:)),'linewidth',2)
-    set(gca,'fontsize',14)
-    legend(Bnames)
-    suptitle(['Subj ' num2str(s) ', Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
+    if plotIndividual
+        ERPfigure;
+        plot(squeeze(ERRA(s,:,:)),'linewidth',2)
+        set(gca,'fontsize',14)
+        legend(Bnames)
+        suptitle(['Subj ' num2str(s) ', Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
+    end
 end
+
 %grand average across subjects:
 for it = 1:size(stimCodes,1)
     for ic = 1:nStim
@@ -284,12 +296,314 @@ for it = 1:size(stimCodes,1)
         CIRA(ic,it) = squeeze(nanmean(ERRA(:,ic,it),1)) - CI(1);
     end
 end
+%save([saveFolder 'ERRA'],'ERRA','CIRA','sigma','tau')
+
 ERPfigure;
 plot(squeeze(nanmean(ERRA(:,:,:),1)),'linewidth',2)
 %errorbar(squeeze(nanmean(ERRA(:,:,:),1)),CIRA,'linewidth',2)
 set(gca,'fontsize',14)
 legend(Bnames)
 suptitle(['Grand RA, Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
-                   
+%% average and plot prevcond bars
+RAdate = '23-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+load([loadFolder 'Metadata'])
+
+
+sigma = 7;
+tau = 2;
+nStim = 5;
+
+ERRA = nan(whichSubjects(end),nStim,nStim,size(stimCodess,2));
+%for each subject:
+for s = whichSubjects
+    stimCodes = squeeze(stimCodess(s,:,:,:));
+    for it = 1:size(stimCodes,1)
+        ERRA(s,:,:,it) = RApeaks(s,it,:,:,sigmas==sigma,taus==tau);
+    end
+end
+
+for it=1:5
+    ERPfigure;
+    set(gcf,'Position',[10+300*it 10 300 700])
+    for curr = 1:5 
+        subplot(5,1,curr)
+        RA = squeeze(nanmean(ERRA(:,curr,:,it),1));
+        bar(1:5,RA,'linewidth',2)
+        %errorbar(squeeze(nanmean(ERRA(:,:,:),1)),CIRA,'linewidth',2)
+        set(gca,'fontsize',14)
+        legend(Bnames)
+        title(['Curr note ' num2str(curr)])
+    end
+    xlabel('previous note')
+    suptitle({['Grand RA prevcond, Block type: ' num2str(it)] [' Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)]})
+end
+%% fitting parameters to all block types together -
+%% find best scaling factor
+
+%load Model
+RAdate = '27-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+
+%load data
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+whichpeaks = {'N1','P2'};
+peakAmps = nan(size(RApeaks(whichSubjects,:,:,:,1,1)));
+        
+SFs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks));
+    
+for ipeak = 1:length(whichpeaks)
+    for bl=1:length(allPeak_amps)
+        peakAmps(:,bl,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
+        %subj x bl x con x prevcon 
+%         peakAmps(:,bl,:) = allGrandcon_amps{bl}(whichSubjects,:,ipeak);
+    end
+    data = nanmean(peakAmps);
+    data = data(:);data(isnan(data))=[];
+    for isig = 1:length(sigmas)
+        for itau = 1:length(taus)
+            model = 1-nanmean(RApeaks(whichSubjects,:,:,:,isig,itau));
+            model = model(:);model(isnan(model))=[];
+            SFs(isig,itau,ipeak) = model\data;%performs SS linear regression
+        end
+    end
+end
+ERPfigure
+for ipeak=1:length(whichpeaks)
+    subplot(1,2,ipeak)
+    imagesc(SFs(:,:,ipeak))
+end
+suptitle('scaling factors')
+saveFolder = loadFolder;
+save([saveFolder 'scalingFactors'],'SFs','sigmas','taus','whichpeaks')                   
 %% plot on top of bargraph N1 data
 
+RAdate = '24-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+save([loadFolder 'scalingFactors'],'SFs')
+peak = 'P2';
+ipeak = find(strcmp(whichpeaks,peak));
+
+plotflag = true;
+
+[xlocs,N1_means] = BarPlotN1(plotflag,peak);
+title([peak ' data (bars) versus model (lines)'])
+%notice - peak_means dim is blocks X notes whereas ERR is subj X notes X
+%blocks. For historical reasons.
+meanV = mean(mean(N1_means));
+maxV = max(max(abs(N1_means)));
+Predict = squeeze(nanmean((1-RApeaks)));
+PredictU = squeeze(nanmean(Predict,3));
+Psigs = [1,3,11,17,21,29];
+Pts = [1.8];
+nComb=numel(Psigs)*numel(Pts);
+cmap = zeros(numel(Psigs)*numel(Pts),3);
+cmap(1:ceil(numel(Psigs)*numel(Pts)/2),1) = linspace(0,1,ceil(numel(Psigs)*numel(Pts)/2));
+cmap(ceil(numel(Psigs)*numel(Pts)/2):end,1) = ones(floor(numel(Psigs)*numel(Pts)/2)+1,1);
+cmap(ceil(numel(Psigs)*numel(Pts)/2):end,2) = linspace(0,0.8,floor(numel(Psigs)*numel(Pts)/2)+1);
+cmap(ceil(numel(Psigs)*numel(Pts)/2):end,3) = linspace(0,0.8,floor(numel(Psigs)*numel(Pts)/2)+1);
+
+hold on
+for bl=1:length(Bnames)
+    xind=((bl-1)*length(Bnames)+1):(bl*length(Bnames));
+    ist=0;cbarTicks=cell(1,nComb);
+    for sig = Psigs
+        for t = Pts
+            ist = ist+1;
+            SF = SFs(sig==sigmas,t==taus,ipeak);
+            RAs = squeeze(nanmean(nanmean(RApeaks(whichSubjects,bl,:,:,sig==sigmas,t==taus)),4));
+            Predict = 1-RAs;
+            cbarTicks{ist}=['Sig=' num2str(sig) ', tau=' num2str(t)];
+            plot(xlocs(xind),Predict'.*SF,'Color',cmap(ist,:),'linew',2)
+        end
+    end
+end
+ax=subplot(10,10,[60,70,80,90,100]);
+colormap(ax,cmap);c=colorbar;
+set(ax,'visible','off')
+set(c,'Ticks',1/nComb:1/nComb:1)
+set(c,'TickLabels',cbarTicks)
+set(c,'Position',[0.85,0.1,0.02,0.5])
+set(c,'YAxisLocation','right')
+set(c,'fontsize',14)
+%% calc and plot model error
+
+%load Model
+RAdate = '23-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+load([loadFolder 'scalingFactors'])                   
+
+%load data
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+whichpeaks = {'N1','P2'};
+peakAmps = nan(size(RApeaks(whichSubjects,:,:,:,1,1)));
+
+Errs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks));
+
+for ipeak = 1:length(whichpeaks)
+    for bl=1:length(allPeak_amps)
+        peakAmps(:,bl,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
+        %subj x bl x con x prevcon 
+%         peakAmps(:,bl,:) = allGrandcon_amps{bl}(whichSubjects,:,ipeak);
+    end
+    ste = nanstd(peakAmps)/sqrt(size(peakAmps,1));
+    ste = ste(:);ste(isnan(ste))=[];
+    data = nanmean(peakAmps);
+    data = data(:);data(isnan(data))=[];
+    for isig = 1:length(sigmas)
+        for itau = 1:length(taus)
+            model = 1-nanmean(RApeaks(whichSubjects,:,:,:,isig,itau));
+            model = model(:);model(isnan(model))=[];
+            SF = SFs(isig,itau,ipeak);
+            Errs(isig,itau,ipeak) = rms((data - model*SF)/mean(ste));%performs SS linear regression
+        end
+    end
+end
+saveFolder = loadFolder;
+save([saveFolder 'Errs'],'Errs','sigmas','taus','whichpeaks')                   
+
+
+ERPfigure;
+for ipeak=1:length(whichpeaks)
+    ax(ipeak) = subplot(1,2,ipeak);
+    imagesc(taus,sigmas,Errs(:,:,ipeak));
+    title(whichpeaks{ipeak})
+    set(gca,'fontsize',12)
+    xlabel('\tau (sec)','fontsize',14);
+    ylabel('\sigma (semitones)','fontsize',14)
+   
+end
+suptitle('normalized error between model and data')
+for ipeak = 1:length(whichpeaks)
+    c(ipeak) = colorbar(ax(ipeak));
+    ylabel(c(ipeak),'STE units')
+end
+saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'fig')
+saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'jpg')
+
+%% fitting parameters to each block type separately -
+%% find best scaling factor (each block type)
+
+%load Model
+RAdate = '24-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+
+%load data
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+whichpeaks = {'N1','P2'};
+peakAmps = nan(size(squeeze(RApeaks(whichSubjects,1,:,:,1,1))));
+        
+SFs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks),size(RApeaks,4));%sigmas, taus, peaks, blockTypes
+    
+for ipeak = 1:length(whichpeaks)
+    for bl=1:length(allPeak_amps)
+        peakAmps(:,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
+        %subj x con x prevcon 
+
+        data = nanmean(peakAmps(:,:,:));
+        data = data(:);data(isnan(data))=[];
+        for isig = 1:length(sigmas)
+            for itau = 1:length(taus)
+                model = 1-nanmean(RApeaks(whichSubjects,bl,:,:,isig,itau));
+                model = model(:);model(isnan(model))=[];
+                SFs(isig,itau,ipeak,bl) = model\data;%performs SS linear regression
+            end
+        end
+    end
+end
+ERPfigure
+ii=0;
+for ipeak=1:length(whichpeaks)
+    for bl=1:length(allPeak_amps)
+        ii=ii+1;
+        subplot(2,5,ii)
+        imagesc(SFs(:,:,ipeak,bl))
+    end
+end
+suptitle('scaling factors')
+
+saveFolder = loadFolder;
+save([saveFolder 'scalingFactors_blockTypes'],'SFs','sigmas','taus','whichpeaks')                   
+
+%% calc and plot model error
+
+%load Model
+RAdate = '23-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+load([loadFolder 'scalingFactors_blockTypes'])                   
+
+%load data
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+whichpeaks = {'N1','P2'};
+%peakAmps = nan(size(RApeaks(whichSubjects,:,:,:,1,1)));
+peakAmps = nan(size(squeeze(RApeaks(whichSubjects,1,:,:,1,1))));
+        
+%SFs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks),size(RApeaks,4));%sigmas, taus, peaks, blockTypes
+
+Errs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks),size(RApeaks,4));%sigmas, taus, peaks, blockTypes
+
+for ipeak = 1:length(whichpeaks)
+    for bl=1:length(allPeak_amps)
+        peakAmps(:,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
+        %subj x bl x con x prevcon 
+%         peakAmps(:,bl,:) = allGrandcon_amps{bl}(whichSubjects,:,ipeak);
+        ste = nanstd(peakAmps)/sqrt(size(peakAmps,1));
+        ste = ste(:);ste(isnan(ste))=[];
+        data = nanmean(peakAmps);
+        data = data(:);data(isnan(data))=[];
+        for isig = 1:length(sigmas)
+            for itau = 1:length(taus)
+                model = 1-nanmean(RApeaks(whichSubjects,bl,:,:,isig,itau));
+                model = model(:);model(isnan(model))=[];
+                SF = SFs(isig,itau,ipeak,bl);
+                Errs(isig,itau,ipeak,bl) = rms((data - model*SF)/mean(ste));%performs SS linear regression
+            end
+        end
+    end
+end
+saveFolder = loadFolder;
+save([saveFolder 'Errs'],'Errs','sigmas','taus','whichpeaks')                   
+
+ERPfigure;
+set(gcf,'units','normalized','outerposition',[0 0 1 1])
+ii=0;
+for ipeak=1:length(whichpeaks)
+    for bl=1:length(allPeak_amps)
+        ii=ii+1;        
+        ax(ii) = subplot(2,5,ii);
+        imagesc(taus,sigmas,Errs(:,:,ipeak,bl));
+        title(whichpeaks{ipeak})
+        set(gca,'fontsize',12)
+        xlabel('\tau (sec)','fontsize',14);
+        ylabel('\sigma (semitones)','fontsize',14)
+        c(ii) = colorbar(ax(ii));
+    end
+    ylabel(c(ii),'STE units')
+end
+suptitle('normalized error between model and data')
+saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_bType_' date],'fig')
+saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_bType_' date],'jpg')

@@ -2,7 +2,8 @@ function [ RA, smpls, stimCode, seqInd ] = calcRA(  R0, sigma, tau, expdata, eve
 %CALCRA calculates the expected RA (response adaptation) as in Herrmann
 %et al. 2014
 % 
-% RA is calculated for all blocks, per trial for a single subjects, 
+% RA;  %types x sequences x channels x timepoints    
+% is calculated for all blocks, per trial for a single subjects, 
 % based on the specific train of stimuli presented during the experiment, 
 % as documented in expdata.
 % 

@@ -136,7 +136,7 @@ end
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 nCond = size(allGrandcon_times{1},2);
 
-for ipeak = 1
+for ipeak = 1:2
     %:length(whichpeaks)
     %exclude subjects for which grandcon peak was calculated as median
     if include
@@ -178,14 +178,16 @@ for ipeak = 1
     bxlocs_noisy = bxlocs + ones(size(bxlocs)).*(1+(rand(size(bpeaks))-0.5)/100) ;
     
     hf = figure;
-    set(hf,'Position',[100 100 1000 700])
+    set(hf,'Position',[100 100 1000 500])
     h = barwitherr(peak_errs, peak_means);% Plot with errorbar
     hold on
     %add all participants:
 %     for ii=1:size(bxlocs,1)
 %         scatter(bxlocs_noisy(ii,:),bpeaks(ii,:),10,'filled','MarkerFaceColor',[0.5 0.5 0.5])
 %     end
-    set(gca,'xticklabels',blocks)
+
+   % set(gca,'xticklabels',blocks)
+   set(gca,'xticklabels',{'1','2','3','4','5'})
 
 %     boxplot(bpeaks,'Position',bxlocs(1,:)+1)
     
@@ -324,7 +326,7 @@ end
 %load peaks
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 nCond = size(allGrandcon_times{1},2);
-for ipeak = 2 
+for ipeak = 1:2
     %1:length(whichpeaks)
     %exclude subjects for which grandcon peak was calculated as median
     if include
@@ -343,7 +345,7 @@ for ipeak = 2
     end
     peak_means = nan(length(blocks),nCond);
     peak_errs = nan(length(blocks),nCond);
-    for bl= 5
+    for bl= 1:5
         %bls
         for con = 1:size(allPeak_amps{1},2)
             for prevcon = 1:size(allPeak_amps{1},3)
@@ -355,16 +357,20 @@ for ipeak = 2
         end
         h=ERPfigure;
         set(h,'Position',[10 100 400 500])
-        Colors = {[0 0 0.5],[0.2 0.5 1],[1 0 0],[0.2 0.5 1],[0 0 0.5]};
+        %Colors = {[0 0 0.5],[0.2 0.5 1],[1 0 0],[0.2 0.5 1],[0 0 0.5]};
+        Colors = parula(5);
         for i=1:size(allPeak_amps{1},2)
             subplot(size(allPeak_amps{1},2),1,i)
-            bar(squeeze(peak_means(bl,i,:)),'FaceColor',Colors{i})
+            bar(squeeze(peak_means(bl,i,:)),'FaceColor',Colors(i,:))
     %     barwitherr(squeeze(peak_means(bl,i,:)),squeeze(peak_errs(bl,i,:)),'FaceColor',Colors{i})
             hold all
             
         end
+        xlabel('previous note')
         suptitle([whichpeaks{ipeak} '. Electrode: ' electrodeName '. Block: ' num2str(bl)])
-    
+%         saveas(gcf,['L:\Experiments\N1P2\Analysis\Figures\Geffen figures\prevcond_b' num2str(bl) '_' whichpeaks{ipeak} '.fig'])
+%         saveas(gcf,['L:\Experiments\N1P2\Analysis\Figures\Geffen figures\prevcond_b' num2str(bl) '_' whichpeaks{ipeak} '.jpg'])
+
     end
 end
 
