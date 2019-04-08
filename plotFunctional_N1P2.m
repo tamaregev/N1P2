@@ -12,7 +12,7 @@ cmap = [1 0 1;...
         1 0.6 0;...
         0 0.7 0;...
         0 0 1 ];
-fos = 12;
+fos = 16;
 
 hf=ERPfigure;
 set(gcf,'units','normalized','outerposition',[0 0 1 1])
@@ -57,7 +57,7 @@ for ipeak = 1:2
             hold on
             p1=polyfit(x(from:to),y(from:to),1);
             f1=polyval(p1,x(from:to));
-            plot(x(from:to),f1,'Color',cmap(ib,:),'HandleVisibility','off','linewidth',1)
+            plot(x(from:to),f1,'Color',cmap(ib,:),'HandleVisibility','off','linewidth',3)
             [R{iib},p{iib}]=corrcoef(x(from:to),y(from:to));
         end
         ylabel([peak ' [\muV]'])
@@ -67,35 +67,45 @@ for ipeak = 1:2
         hold on
         p1=polyfit(x,y,1);
         f1=polyval(p1,x);
-        plot(x,f1,'k','linewidth',3)
+        plot(x,f1,'k','linewidth',4)
         
-        xlim = get(gca,'Xlim');
-        dx=(xlim(2)-xlim(1))*0.45;
-        ylim = get(gca,'Ylim');
-        dy=abs((ylim(2)-ylim(1)))*0.07;
+        xlims = get(gca,'Xlim');
+        dx=(xlims(2)-xlims(1))*0.45;
+        if ipeak == 1
+            ylim(gca,[-4 0])
+        else
+            ylim(gca,[1.5 4])
+        end
+        ylims = get(gca,'Ylim');
+        dy=abs((ylims(2)-ylims(1)))*0.07;
         iib=0;
         for ib=ibs
             iib=iib+1;
             if ipeak == 1
-                text(xlim(1),ylim(1)+5*dy-(iib)*dy,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
+                %text(xlims(1),ylims(1)+6*dy-(iib)*dy,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
+                text(xlims(1),ylims(1)+7*dy-(iib)*dy,['R=' num2str(R{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
             else
-                text(xlim(1),ylim(2)-(iib)*dy+dy/2,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
+                %text(xlims(1),ylims(2)-(iib)*dy+dy/2,['R=' num2str(R{iib}(1,2),2) ', p=' num2str(p{iib}(1,2),2)],'Color',cmap(ib,:),'fontsize',fos);
+                text(xlims(1),ylims(2)-(iib)*dy+dy/2,['R=' num2str(R{iib}(1,2),2) ],'Color',cmap(ib,:),'fontsize',fos);
             end
         end
         [Rtot,ptot]=corrcoef(x,y);
         if ipeak ==1
-            text(xlim(1),ylim(1)+5*dy-(iib+1)*dy,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
+%            text(xlims(1),ylims(1)+6*dy-(iib+1)*dy,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
+            text(xlims(1),ylims(1)+7*dy-(iib+1)*dy,['R=' num2str(Rtot(1,2),2)],'Color','k','fontsize',fos);
         else
-            text(xlim(1),ylim(2)-(iib+1)*dy+dy/2,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
+%            text(xlims(1),ylims(2)-(iib+1)*dy+dy/2,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
+            text(xlims(1),ylims(2)-(iib+1)*dy+dy/2,['R=' num2str(Rtot(1,2),2)],'Color','k','fontsize',fos);
         end
     end
 end
-legendstring = {};
-for iib=1:length(ibs)
-    %legendstring(iib)={['b' num2str(ibs(iib))]};
-    legendstring(iib)={['Condition ' num2str(ibs(iib))]};
-end
+% legendstring = {};
+% for iib=1:length(ibs)
+%     %legendstring(iib)={['b' num2str(ibs(iib))]};
+%     legendstring(iib)={[num2str(ibs(iib))]};
+% end
     
+legendstring = {'1','2a','2b','3a','3b'};
 lh=legend(legendstring,'linear fit');
 set(lh,'position',[0.93 0.33 0.05 0.1],'fontsize',16)
 

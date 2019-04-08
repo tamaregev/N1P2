@@ -16,6 +16,10 @@ Bcodes_names = table(Bnames,Bcodes);
 blocks = Bnames;
 bls=1:5;
 %% plot all cond, prevcond
+
+sigma = 10;
+tau = 0.4;
+
 if 1 % as in functionalPlots_GH
     if 1 %params
         electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
@@ -52,12 +56,9 @@ if 1 % as in functionalPlots_GH
     end
 end
 
-sigma = 7;
-tau = 0.4;
-
 % prepare allTables for the model
 %load Model
-RAdate = '23-Dec-2018';
+RAdate = '19-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
 load([loadFolder 'Params'])
@@ -74,7 +75,7 @@ for ib=ibs
         prev = str2double(Table.prevNote{iline}(6));
         RA = RApeaks(subj,ib,curr,prev,sigmas==sigma,taus==tau);
         Predict = 1-RA;
-        Table.N1(iline) = -1*Predict.*SFs(sigma==sigmas,tau==taus,1);
+        Table.N1(iline) = Predict.*SFs(sigma==sigmas,tau==taus,1);
         Table.P2(iline) = Predict.*SFs(sigma==sigmas,tau==taus,2);
     end
     RATables.(blocks{ib}) = Table;

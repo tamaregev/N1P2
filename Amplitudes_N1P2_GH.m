@@ -187,7 +187,7 @@ for ipeak = 1:2
 %     end
 
    % set(gca,'xticklabels',blocks)
-   set(gca,'xticklabels',{'1','2','3','4','5'})
+   set(gca,'xticklabels',{'1','2a','2b','3a','3b'})
 
 %     boxplot(bpeaks,'Position',bxlocs(1,:)+1)
     

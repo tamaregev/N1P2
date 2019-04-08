@@ -15,16 +15,19 @@ function [ grandRA ] = calcGrandRA_CondPrev( bl, whichSubjects, RAs_SigTau, Even
             
 grandRA = nan(whichSubjects(end),1,size(RAs_SigTau,3),length(EventCodes),length(prevEventCodes),size(RAs_SigTau,6),size(RAs_SigTau,7));
 
+stims = nan(1,size(RAs_SigTau,5));
+stims_prev = nan(1,size(RAs_SigTau,5));
+
 for seq = 1:size(RAs_SigTau,3)
     for s=whichSubjects
-        stims_prev = stimCodess(s,bl,seq,1:end-1);
-        stims = stimCodess(s,bl,seq,2:end);    
+        stims_prev(2:end) = stimCodess(s,bl,seq,1:end-1);
+        stims(2:end) = stimCodess(s,bl,seq,2:end);    
         for con=1:length(EventCodes)
             for prevcon = 1:length(prevEventCodes)
                 stimsInd_prev = stims_prev == prevEventCodes{prevcon};
                 stimInd = stims == EventCodes{con};
                 if any(stimsInd_prev & stimInd)
-                    grandRA(s,1,seq,con,prevcon,:,:) = mean(RAs_SigTau(s,bl,seq,con,stimInd & stimsInd_prev,:,:),5);
+                    grandRA(s,1,seq,con,prevcon,:,:) = mean(RAs_SigTau(s,bl,seq,con,squeeze(stimInd & stimsInd_prev),:,:),5);
                 end
             end
         end
