@@ -13,17 +13,16 @@ badSubjects = [1, 20, 29, 34];
 longSubjects = [11, 12, 17, 35];%1/2 infinite artifacts - bug in read_markers_artifacts
 
 mode = [];
+drive = '/Volumes/Leon_lab';%network
+localDrive = drive;%no local on mac
 
-drive = 'L:';%network
-localDrive = 'D:';
+ResultsFolder = [drive filesep 'Experiments' filesep ExpName filesep 'Experiment' filesep 'Results' filesep];
+AnalyzerExportFolder = [ResultsFolder 'EEG' filesep 'export' filesep];
+RawDataFolder = [ResultsFolder 'EEG' filesep 'raw' filesep];
+AnalysisFolder = [drive filesep 'Experiments' filesep ExpName filesep 'Analysis' filesep];
+EDATfolder = [ResultsFolder 'EDAT' filesep];
 
-ResultsFolder = [drive '\Experiments\' ExpName '\Experiment\Results\'];
-AnalyzerExportFolder = ['L' ResultsFolder(2:end) 'EEG\export\'];
-RawDataFolder = [ResultsFolder 'EEG\raw\'];
-AnalysisFolder = [drive '\Experiments\' ExpName '\Analysis\'];
-EDATfolder = [ResultsFolder 'EDAT\'];
-
-ExportFolder = [AnalyzerExportFolder 'beforeSegmentations\'];
+ExportFolder = [AnalyzerExportFolder 'beforeSegmentations' filesep];
 
 Expinfo.ExpName = ExpName;
 Expinfo.Subjects = Subjects;Expinfo.sessions = sessions;

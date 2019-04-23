@@ -62,6 +62,8 @@ disp(['saving ' mixedFolder 'N1P2_' electrodeName '_' addtag date ' ...'] )
 save([mixedFolder 'N1P2_' electrodeName '_' addtag date],'allPeak_smpls','allPeak_amps','allPeak_times','allGrandcon_as_median','allGrandcon_amps','allGrandcon_times','t','dt','mode','blocks','bls','matrixdate','bslwin','pwins','electrodeName')
 disp('done')
 
+%% peak detection - individual trials
+
 %% check that N1 is before P2
 if 1 %params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'

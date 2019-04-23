@@ -1,15 +1,22 @@
 %The Model as in Herrmann et al.
 % Nov 25 2018, Tamar Regev
 %% Definitions
-cd('L:\Experiments\N1P2\Analysis\N1P2_GH')
-Definitions_N1P2
+macflag = false;
+switch macflag
+    case true
+        Definitions_N1P2_mac
+    case false
+        Definitions_N1P2
+end
+GHfolder = [AnalysisFolder 'N1P2_GH'];
+cd(GHfolder)
 sbjcts = 1:37;
 mss = [5,14];
 whichSubjects = sbjcts(~ismember(sbjcts,[badSubjects,mss]));
 
 grandFolder = [AnalysisFolder 'grandAverage'];
-mixedFolder = [AnalysisFolder 'MixedModel\'];
-modelFolder = [AnalysisFolder 'Model\'];
+mixedFolder = [AnalysisFolder 'MixedModel' filesep];
+modelFolder = [AnalysisFolder 'Model' filesep];
 
 srate = 512;
 Expinfo.srate = srate;
@@ -78,7 +85,9 @@ for s=2
     
     %load expdata and markers
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
-    load(['D' EDATfolder(2:end) FileName '_expdata.mat' ])
+    cd(EDATfolder)
+    load([FileName '_expdata.mat' ])
+    cd(AnalysisFolder)
     %load and read markers
     VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
     [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
@@ -87,7 +96,7 @@ for s=2
     [ RA, smpls, stimCodes, seqInd ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
 % pause
     %plot RA
-    if 1
+    if 0
         ERPfigure;
         isp=0;
         for it=1:size(RA,1)
@@ -155,8 +164,8 @@ saveFolder = [modelFolder date filesep];
 R0=0.5;
 phaseName = 'Passive';
 %sigmas = [1:12,14,16,18];%MIDI
-sigmas = [1:18];%MIDI
-taus = [0.1:0.3:15];%seconds
+sigmas = [1:2:19];%MIDI
+taus = [0.2:0.6:30];%seconds
 SOA_threshold = 0.6;%seconds
 %Mis = (20:130)';
 Mis = nan; %for having only the 5 Mis of the stimuli
@@ -216,7 +225,7 @@ disp(['Done all in ' num2str(toc(tictot)) ' sec.'])
 
 %% compare to ERPs -
 %% calc. expected peaks
-RAdate = '24-Dec-2018';
+RAdate = '10-Apr-2019';
 loadFolder = [modelFolder RAdate filesep];
 saveFolder = loadFolder;
 
@@ -257,6 +266,9 @@ save([saveFolder 'RApeaks'],'RApeaks')
 %23-Dec-2018 : full with larger sigmas, half resolution, only odd sigmas
 %24-Dec-2018 : smaller taus
 %27-Dec-2018 : smaller sigmas
+%08-Apr-2019 : larger range of taus with a lower resolution 0.1:0.3:15
+%10-Apr-2019 : taus 0.1:0.6:30
+%23-Apr-2019 : around the minimum for STE estimation for N1: 
 %% average and plot U-shape
 RAdate = '24-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
@@ -345,11 +357,13 @@ end
 
 %% fitting parameters to all block types together -
 %% find best scaling factor
-
+weightedFlag = false;
 %load Model
-RAdate = '24-Dec-2018';
+%RAdate = '08-Apr-2019';
+%RAdate = '19-Dec-2018';
+RAdate = '19-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
-load([loadFolder 'RApeaks'])
+load([loadFolder 'RApeaks.'])
 load([loadFolder 'Params'])
 
 %load data
@@ -368,13 +382,19 @@ for ipeak = 1:length(whichpeaks)
         %subj x bl x con x prevcon 
 %         peakAmps(:,bl,:) = allGrandcon_amps{bl}(whichSubjects,:,ipeak);
     end
+    ste = nanstd(peakAmps)/sqrt(size(peakAmps,1));
+    ste = ste(:);ste(isnan(ste))=[];
     data = nanmean(peakAmps);
     data = data(:);data(isnan(data))=[];
     for isig = 1:length(sigmas)
         for itau = 1:length(taus)
             model = 1-nanmean(RApeaks(whichSubjects,:,:,:,isig,itau));
             model = model(:);model(isnan(model))=[];
-            SFs(isig,itau,ipeak) = model\data;%performs SS linear regression
+            if weightedFlag
+                SFs(isig,itau,ipeak) = model\(data./ste);%performs SS linear regression
+            else
+                SFs(isig,itau,ipeak) = model\data;%performs SS linear regression
+            end
         end
     end
 end
@@ -388,12 +408,12 @@ saveFolder = loadFolder;
 save([saveFolder 'scalingFactors'],'SFs','sigmas','taus','whichpeaks')                   
 %% plot on top of bargraph N1 data
 
-RAdate = '24-Dec-2018';
+RAdate = '08-Apr-2019';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
 load([loadFolder 'Params'])
 save([loadFolder 'scalingFactors'],'SFs')
-peak = 'P2';
+peak = 'N1';
 ipeak = find(strcmp(whichpeaks,peak));
 
 plotflag = true;
@@ -406,8 +426,8 @@ meanV = mean(mean(N1_means));
 maxV = max(max(abs(N1_means)));
 Predict = squeeze(nanmean((1-RApeaks)));
 PredictU = squeeze(nanmean(Predict,3));
-Psigs = [1,3,11,17,21,29];
-Pts = [0.01];
+Psigs = [1,3,11,17];
+Pts = [0.1,2.2,4.6];
 nComb=numel(Psigs)*numel(Pts);
 cmap = zeros(numel(Psigs)*numel(Pts),3);
 cmap(1:ceil(numel(Psigs)*numel(Pts)/2),1) = linspace(0,1,ceil(numel(Psigs)*numel(Pts)/2));
@@ -441,6 +461,7 @@ set(c,'fontsize',14)
 %% calc and plot model error
 
 %load Model
+%RAdate = '08-Apr-2019';
 RAdate = '19-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
@@ -472,7 +493,9 @@ for ipeak = 1:length(whichpeaks)
             model = 1-nanmean(RApeaks(whichSubjects,:,:,:,isig,itau));
             model = model(:);model(isnan(model))=[];
             SF = SFs(isig,itau,ipeak);
-            Errs(isig,itau,ipeak) = rms((data - model*SF)/mean(ste));%performs SS linear regression
+            %this was a mistake:
+            %Errs(isig,itau,ipeak) = rms((data - model*SF)/mean(ste));%performs SS linear regression
+            Errs(isig,itau,ipeak) = rms((data - model*SF)./ste);%performs SS linear regression
         end
     end
 end
@@ -482,12 +505,14 @@ save([saveFolder 'Errs'],'Errs','sigmas','taus','whichpeaks')
 
 ERPfigure;
 set(gcf,'Position', [50 50 1200 450])
-errmin = min(min(min(Errs(:,1:25,:,:))));
-errmax = max(max(max(Errs(:,1:25,:,:))));
+errmin = min(min(min(Errs(:,:,:,:))));
+errmax = max(max(max(Errs(:,:,:,:))));
+bestaus = nan(2,1);
+bestsigmas = nan(2,1);
 for ipeak=1:length(whichpeaks)
     ax(ipeak) = subplot(1,2,ipeak);
-    [row col]=find(Errs(:,1:25,ipeak)==min(min(Errs(:,1:25,ipeak))));
-    imagesc(taus(1:25),sigmas,Errs(:,1:25,ipeak));
+    [row col]=find(Errs(:,:,ipeak)==min(min(Errs(:,:,ipeak))));
+    imagesc(taus,sigmas,Errs(:,:,ipeak));
     caxis([errmin errmax])
     
     title(whichpeaks{ipeak})
@@ -498,17 +523,22 @@ for ipeak=1:length(whichpeaks)
     plot([taus(col) taus(col)],[sigmas(1) sigmas(end)],'Color',[1 1 1],'linewidth',3)
     plot([taus(1) taus(end)],[sigmas(row) sigmas(row)],'Color',[1 1 1],'linewidth',3)
     set(gca,'fontsize',14)
+    bestaus(ipeak) = taus(col);
+    bestsigmas(ipeak) = sigmas(row);
+    text(4,15,['(' num2str(taus(col)) ',' num2str(sigmas(row)) ')'],'Color',[1,1,1],'fontsize',22);
 end
 suptitle('normalized error between model and data')
 for ipeak = 1:length(whichpeaks)
     c(ipeak) = colorbar(ax(ipeak));
     ylabel(c(ipeak),'normalized error (STE units)','fontsize',16)
 end
+save([saveFolder filesep 'bestFitParams'],'bestaus','bestsigmas')
 saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'fig')
 saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'jpg')
 %% calc and plot model error - contours
 
 %load Model
+%RAdate = '08-Apr-2019';
 RAdate = '19-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
@@ -551,11 +581,11 @@ save([saveFolder 'Errs'],'Errs','sigmas','taus','whichpeaks')
 ERPfigure;
 lastaupos = 25;
 set(gcf,'Position', [50 50 1200 450])
-errmin = min(min(min(Errs(:,1:25,:,:))));
-errmax = max(max(max(Errs(:,1:25,:,:))));
+errmin = min(min(min(Errs(:,1:lastaupos,:,:))));
+errmax = max(max(max(Errs(:,1:lastaupos,:,:))));
 for ipeak=1:length(whichpeaks)
     ax(ipeak) = subplot(1,2,ipeak);
-    [row col]=find(Errs(:,1:lastaupos,ipeak)==min(min(Errs(:,1:25,ipeak))));
+    [row, col]=find(Errs(:,1:lastaupos,ipeak)==min(min(Errs(:,1:lastaupos,ipeak))));
     [X, Y]=meshgrid(taus(1:lastaupos),sigmas);
     contourf(X,Y,Errs(:,1:lastaupos,ipeak),[1.1:0.05:1.5 1.6:0.1:2.3],'linewidth',2);
     caxis([errmin errmax])
@@ -890,11 +920,11 @@ title('\sigma as a function of frequency spread','fontsize',20)
 ylabel('Best fit \sigma (semitones)','fontsize',20)
 xlabel('Mean spread in the sequence (semitones)','fontsize',20)
 
-
 %% Fit Model for each participant separately
 % April 2019
 % calc. expected peaks
-RAdate = '19-Dec-2018';
+%RAdate = '19-Dec-2018';
+RAdate = '10-Apr-2019';
 loadFolder = [modelFolder RAdate filesep];
 saveFolder = [loadFolder 'individual' filesep];
 mkdir(saveFolder)
@@ -972,7 +1002,8 @@ for ipeak = 1:length(whichpeaks)
     end
 end
 save([saveFolder 'Errs'],'Errs','sigmas','taus','whichpeaks')                   
-%plot error spaces
+%% plot error spaces
+plotflag = false;
 ERPfigure;
 lastsigpos = length(sigmas);
 lastaupos = length(taus);
@@ -981,6 +1012,8 @@ errmin = min(min(min(min(Errs(:,1:lastsigpos,1:lastaupos,:)))));
 errmax = max(max(max(max(Errs(:,1:lastsigpos,1:lastaupos,:)))));
 bestsigmas = nan(length(whichSubjects),2);
 bestaus = nan(length(whichSubjects),2);
+minErrs = nan(length(whichSubjects),2);
+meanErrs = nan(length(whichSubjects),2);
 
 for s=1:length(whichSubjects)
     for ipeak=1:length(whichpeaks)
@@ -989,10 +1022,12 @@ for s=1:length(whichSubjects)
         [row col]=find(squeeze(Errs(s,1:lastsigpos,1:lastaupos,ipeak))==min(min(Errs(s,1:lastsigpos,1:lastaupos,ipeak))));
         bestsigmas(s,ipeak) = sigmas(row);
         bestaus(s,ipeak) = taus(col);
-        [X, Y]=meshgrid(taus(1:lastaupos),sigmas);
-        contourf(X,Y,squeeze(Errs(s,1:lastsigpos,1:lastaupos,ipeak)),[1.1:0.05:1.5 1.6:0.1:2.3],'linewidth',2);
+        %[X, Y]=meshgrid(taus(1:lastaupos),sigmas);
+        %contourf(X,Y,squeeze(Errs(s,1:lastsigpos,1:lastaupos,ipeak)),[1.1:0.05:1.5 1.6:0.1:2.3],'linewidth',2);
+        imagesc(taus,sigmas,squeeze(Errs(s,1:lastsigpos,1:lastaupos,ipeak)));
         %caxis([errmin errmax])
-
+        minErrs(s,ipeak) = squeeze(Errs(s,row,col,ipeak));
+        meanErrs(s,ipeak) = mean(mean(Errs(s,:,:,ipeak)));
         title(whichpeaks{ipeak})
         xlabel('\tau (sec)','fontsize',20);
         ylabel('\sigma (semitones)','fontsize',20)
@@ -1002,14 +1037,16 @@ for s=1:length(whichSubjects)
         plot([taus(1) taus(lastaupos)],[sigmas(row) sigmas(row)],'Color',[1 1 1],'linewidth',3)
         set(gca,'fontsize',14)
     end
-    suptitle('Error between model and data')
+    suptitle(['Subj ' num2str(whichSubjects(s))])
     for ipeak = 1:length(whichpeaks)
         c(ipeak) = colorbar(ax(ipeak));
         ylabel(c(ipeak),'normalized error (STE units)','fontsize',16)
     end
-    %pause
+    if plotflag
+        pause
+    end
 end
-save([saveFolder 'individual_bestFits'],'bestsigmas','bestaus')
+save([saveFolder 'individual_bestFits'],'bestsigmas','bestaus','minErrs','meanErrs')
 disp('done')
 %saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'fig')
 %saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'jpg')
@@ -1019,8 +1056,7 @@ disp('done')
 
 %epsclean([AnalysisFolder 'Figures\model\norm_err_model_data_' date '.eps'],[AnalysisFolder 'Figures\model\norm_err_model_data_' date '_clean.eps']);
 %epsclean([AnalysisFolder 'Figures\model\norm_err_model_data_' date '.eps'],[AnalysisFolder 'Figures\model\norm_err_model_data_' date '_clean_combineAreas.eps'],'combineAreas',true)
-%%
-%plotbestfits
+%% plot best fits
 ERPfigure
 datas = {bestsigmas,bestaus};
 strings = {'sigma','tau'};
@@ -1038,6 +1074,291 @@ for i=1:2
     plot(Xjit',data','o','markersize',6,'Color','k')
     title(['best fit \' strings{i}])
     %plot([1,2],[mean(data(:,1)),mean(data(:,2))],'g','linewidth',2)
-     [p,H]=signrank(data(:,2),data(:,1));
+    [p,H]=signrank(data(:,2),data(:,1));
     text(1,9,['Wilcoxon p=' num2str(p,2)],'fontsize',14,'Color','g')
 end
+%% investigate extreme participants
+XSi=find(data(:,1)>10);
+XS=whichSubjects(XSi);
+sigmasX=datas{1}(XSi,:);
+tausX=datas{2}(XSi,:);
+save([saveFolder 'XtremeS'],'XS','XSi')
+
+%% plot individual participants data (extremes)
+%comes from:
+% plot on top of bargraph N1 data
+RAdate = '10-Apr-2019';
+loadFolder = [modelFolder RAdate filesep];
+saveFolder = [loadFolder 'individual' filesep];
+load([saveFolder 'XtremeS']);
+%tic
+%fprintf(['Loading...'])
+%load([loadFolder 'Metadata'])
+%load([loadFolder 'Params'])
+%load([loadFolder 'RApeaks'])
+%fprintf(['Done in %4.1f sec \n'], toc)
+whichpeaks = {'N1','P2'};
+
+peak = 'N1';
+ipeak = find(strcmp(whichpeaks,peak));
+
+plotflag = true;
+[xlocs,N1_means,N1_errs,bpeaks] = BarPlotN1_individuals(plotflag,peak);
+title([peak ' grand data (bars) versus individual participants (lines)'])
+%notice - peak_means dim is blocks X notes whereas ERR is subj X notes X
+%blocks. For historical reasons.
+hold on
+%XtremeS
+for bl=1:length(Bnames)
+    xind=((bl-1)*length(Bnames)+1):(bl*length(Bnames));
+    plot(xlocs(xind),bpeaks(:,xind),'Color',[0.5 0.5 0.5],'linew',1)
+    plot(xlocs(xind),bpeaks(XSi,xind),'Color','r','linew',1)
+end
+allSi = 1:length(whichSubjects);
+nonXSi=allSi(~ismember(allSi,XSi));
+diffsInd = bpeaks-repmat(mean(bpeaks),size(bpeaks,1),1);
+noise = rms(diffsInd');
+
+ERPfigure
+for si=1:length(whichSubjects)
+    subplot(6,6,si)
+    h = barwitherr(N1_errs, N1_means);% Plot with errorbar
+    ylim([-5,2])
+    hold on
+    for bl=1:length(Bnames)
+        xind=((bl-1)*length(Bnames)+1):(bl*length(Bnames));
+        if ismember(si,XSi)
+            plot(xlocs(xind),bpeaks(si,xind),'Color','r','linew',2)
+        else
+            plot(xlocs(xind),bpeaks(si,xind),'Color','g','linew',2)
+        end
+    end    
+end
+
+figure
+subplot(1,3,1)
+data=noise;
+boxplot([data(XSi) data(nonXSi)],[zeros(size(data(nonXSi))),ones(size(data(XSi)))])
+hold on
+plot(ones(size(data(XSi))),data(XSi),'.','Markersize',16)
+hold on
+plot(2*ones(size(data(nonXSi))),data(nonXSi),'.','Markersize',16)
+title(['noise (rms diff from mean)'])
+
+load([saveFolder 'individual_bestFits'])
+ipeak = 1;%N1
+subplot(1,3,2)
+data=minErrs(:,ipeak)';
+boxplot([data(XSi) data(nonXSi)],[zeros(size(data(nonXSi))),ones(size(data(XSi)))])
+hold on
+plot(ones(size(data(XSi))),data(XSi),'.','Markersize',16)
+hold on
+plot(2*ones(size(data(nonXSi))),data(nonXSi),'.','Markersize',16)
+title(['min Errs'])
+
+subplot(1,3,3)
+data=meanErrs(:,ipeak)';
+boxplot([data(XSi) data(nonXSi)],[zeros(size(data(nonXSi))),ones(size(data(XSi)))])
+hold on
+plot(ones(size(data(XSi))),data(XSi),'.','Markersize',16)
+hold on
+plot(2*ones(size(data(nonXSi))),data(nonXSi),'.','Markersize',16)
+title(['mean Errs'])
+
+%% %%%%%%%Fit model to each pariticipant and condition separately!
+%
+%% find best scaling factor (each condition, participant)
+spreads = 1:3;%these are the 3 conditions
+block2cond = [1,2,2,3,3];
+
+%load Model
+RAdate = '19-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+saveFolder = [loadFolder 'individual' filesep];
+
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+
+%load data
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+whichpeaks = {'N1','P2'};
+
+%SFs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks),length(spreads));%sigmas, taus, peaks, conditions
+SFs = nan(length(whichSubjects),size(RApeaks,5),size(RApeaks,6),length(whichpeaks),length(spreads));
+%conditions:
+for ipeak = 1:length(whichpeaks)
+    for ispread=1:length(spreads)
+        bls = find(block2cond == ispread);
+        peakAmps = nan(size((RApeaks(whichSubjects,1:length(bls),:,:,1,1))));
+
+        for ib=1:length(bls)
+            peakAmps(:,ib,:,:) = allPeak_amps{bls(ib)}(whichSubjects,:,:,ipeak);
+        end
+        for s=1:length(whichSubjects)
+            data = peakAmps(s,:,:,:);
+            data = data(:);data(isnan(data))=[];
+            for isig = 1:length(sigmas)
+                for itau = 1:length(taus)
+                    model = nan(length(bls),size(RApeaks,3),size(RApeaks,4));
+                    for ib=1:length(bls)
+                        model(ib,:,:) = 1-RApeaks(whichSubjects(s),bls(ib),:,:,isig,itau);
+                    end
+                    model = model(:);model(isnan(model))=[];
+                    SFs(s,isig,itau,ipeak,ispread) = model\data;%performs SS linear regression
+                end
+            end
+        end
+    end
+end
+
+for ipeak=1:length(whichpeaks)
+    ii=0;
+    ERPfigure
+    for ispread=1:length(spreads)
+        for s=1:length(whichSubjects)
+            ii=ii+1;
+            subplot(3,length(whichSubjects),ii)
+            imagesc(squeeze(SFs(s,:,:,ipeak,ispread)))
+        end
+    end
+    suptitle(['scaling factors ' whichpeaks{ipeak}])
+end
+
+save([saveFolder 'scalingFactors_spreads'],'SFs','sigmas','taus','whichpeaks')                   
+
+%% calc and plot model error - individual conditions, participant
+
+SF_cond = true;
+
+%load Model
+RAdate = '19-Dec-2018';
+loadFolder = [modelFolder RAdate filesep];
+load([loadFolder 'RApeaks'])
+load([loadFolder 'Params'])
+if SF_cond
+    load([loadFolder 'individual' filesep 'scalingFactors_spreads'])                   
+else
+    load([loadFolder 'individual' filesep 'scalingFactors'])
+end
+%load data
+electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
+addtag = '';
+peakdate = '30-Oct-2018';
+load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
+whichpeaks = {'N1','P2'};
+%peakAmps = nan(size(RApeaks(whichSubjects,:,:,:,1,1)));
+peakAmps = nan(size(squeeze(RApeaks(whichSubjects,1,:,:,1,1))));
+        
+%SFs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks),size(RApeaks,4));%sigmas, taus, peaks, blockTypes
+
+Errs = nan(length(whichSubjects),size(RApeaks,5),size(RApeaks,6),length(whichpeaks),length(spreads));%sigmas, taus, peaks, blockTypes
+
+for ipeak = 1:length(whichpeaks)
+    for ispread=1:length(spreads)
+        bls = find(block2cond == ispread);
+        peakAmps = nan(size((RApeaks(whichSubjects,1:length(bls),:,:,1,1))));
+
+        for ib=1:length(bls)
+            peakAmps(:,ib,:,:) = allPeak_amps{bls(ib)}(whichSubjects,:,:,ipeak);
+        end
+        for s=1:length(whichSubjects)
+%             ste = nanstd(peakAmps)/sqrt(size(peakAmps,1));
+%             ste = ste(:);ste(isnan(ste))=[];
+            data = peakAmps(s,:,:,:);
+            data = data(:);data(isnan(data))=[];
+            for isig = 1:length(sigmas)
+                for itau = 1:length(taus)
+                    model = nan(length(bls),size(RApeaks,3),size(RApeaks,4));
+                    for ib=1:length(bls)
+                        model(ib,:,:) = 1-RApeaks(whichSubjects(s),bls(ib),:,:,isig,itau);         
+                    end
+                    model = model(:);model(isnan(model))=[];
+                    if SF_cond
+                        SF = SFs(s,isig,itau,ipeak,ispread);
+                    else
+                        SF = SFs(s,isig,itau,ipeak);
+                    end
+                    Errs(s,isig,itau,ipeak,ispread) = rms(data - model*SF);%performs SS linear regression
+                end
+            end
+        end
+    end
+end
+
+save([saveFolder 'Errs_spreads'],'Errs','sigmas','taus','whichpeaks')                   
+
+bestParams = nan(length(whichSubjects),length(spreads),length(whichpeaks),2);
+%plot error spaces
+for s=1:length(whichSubjects)
+    ERPfigure;
+    set(gcf,'units','normalized','outerposition',[0 0 0.7 0.7])
+    ii=0;
+    errmin = min(min(min(min(min(Errs(s,:,:,ipeak,:))))));
+    errmax = max(max(max(max(max(Errs(s,:,:,ipeak,:))))));
+   
+    for ipeak=1:length(whichpeaks)
+       for ispread=1:length(spreads)
+            ii=ii+1;        
+            ax(ii) = subplot(2,3,ii);
+            [row col]=find(squeeze(Errs(s,:,:,ipeak,ispread))==min(min(Errs(s,:,:,ipeak,ispread))));
+            imagesc(taus(1:25),sigmas,squeeze(Errs(s,:,:,ipeak,ispread)));
+%             caxis([errmin errmax])
+            hold on 
+            plot([taus(col) taus(col)],[sigmas(1) sigmas(end)],'Color',[1 1 1],'linewidth',3)
+            plot([taus(1) taus(end)],[sigmas(row) sigmas(row)],'Color',[1 1 1],'linewidth',3)
+            bestParams(s,ispread,ipeak,1)=sigmas(row);
+            bestParams(s,ispread,ipeak,2)=taus(col);
+            title({whichpeaks{ipeak},['Condition ' num2str(ispread)]})
+            set(gca,'fontsize',12)
+            if ipeak ==2
+                xlabel('\tau (sec)','fontsize',14);
+            end
+            if ispread==1
+                ylabel('\sigma (semitones)','fontsize',14)
+            end
+            %pause(1)
+            %c(ii) = colorbar(ax(ii));
+        end
+        c(ipeak) = colorbar;
+        ylabel(c(ipeak),'STE units','fontsize',14)
+        if ipeak ==1
+            set(c(ipeak),'Position',[0.92 0.562 0.02 0.323])
+        else
+            set(c(ipeak),'Position',[0.92 0.108 0.02 0.323])
+        end
+    end
+    suptitle(['Subj ' num2str(s) '. Normalized error - each conditions separately'])
+    % saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_spreads_' date],'fig')
+    % saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_spreads_' date],'jpg')
+end
+%%
+freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
+meanfreqspreads = mean(freqspreads');
+%bestParams: s x ispread x ipeak x sigortau
+errorbars = nan(length(meanfreqspreads),2);
+for ipeak = 1:2
+    for ispread = 1:length(meanfreqspreads) 
+        %CIs = Confidence(bestParams(:,ispread,ipeak,1));
+        %errorbars(ispread,ipeak) = mean(bestParams(:,ispread,ipeak,1)) - CIs(1);
+        x = bestParams(:,ispread,ipeak,1);
+        errorbars(ispread,ipeak) = nanstd(x)/sqrt(length(x(~isnan(x))));
+    end
+end
+ERPfigure
+hold on
+plot(meanfreqspreads,mean(bestParams(:,:,1,1)),'b','linewidth',2)
+plot(meanfreqspreads,mean(bestParams(:,:,2,1)),'r','linewidth',2)
+set(gca,'fontsize',20)
+legend({'N1','P2'},'fontsize',20,'Location','nw')
+plot(meanfreqspreads,mean(bestParams(:,:,1,1)),'.b','MarkerSize',50)
+plot(meanfreqspreads,mean(bestParams(:,:,2,1)),'.r','MarkerSize',50)
+errorbar(meanfreqspreads,mean(bestParams(:,:,1,1)),errorbars(:,1),'b')
+errorbar(meanfreqspreads,mean(bestParams(:,:,2,1)),errorbars(:,1),'r')
+
+title('\sigma as a function of frequency spread','fontsize',20)
+ylabel('Best fit \sigma (semitones)','fontsize',20)
+xlabel('Mean spread in the sequence (semitones)','fontsize',20)
+

@@ -1,0 +1,7 @@
+%addpaths:
+K = '/Volumes/NewDataArch/CommonResources/Tools/Matlab_Tools';
+L = '/Volumes/Leon_lab/Experiments/N1P2/Analysis/N1P2_GH:';
+N1P2
+addpath(K)
+addpath()
+
