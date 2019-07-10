@@ -11,6 +11,9 @@ versions = {'','','','','','','','','','','','','','','','','','','','','','',''
 % 29 - too many artifacts
 badSubjects = [1, 20, 29, 34];
 longSubjects = [11, 12, 17, 35];%1/2 infinite artifacts - bug in read_markers_artifacts
+sbjcts = 1:37;
+mss = [5,14];%couldn't find a peak
+whichSubjects = sbjcts(~ismember(sbjcts,[badSubjects,mss]));
 
 mode = [];
 
@@ -23,6 +26,10 @@ RawDataFolder = [ResultsFolder 'EEG\raw\'];
 AnalysisFolder = [drive '\Experiments\' ExpName '\Analysis\'];
 EDATfolder = [ResultsFolder 'EDAT\'];
 
+grandFolder = [AnalysisFolder 'grandAverage'];
+mixedFolder = [AnalysisFolder 'MixedModel' filesep];
+modelFolder = [AnalysisFolder 'Model' filesep];
+
 ExportFolder = [AnalyzerExportFolder 'beforeSegmentations\'];
 
 Expinfo.ExpName = ExpName;
@@ -30,4 +37,15 @@ Expinfo.Subjects = Subjects;Expinfo.sessions = sessions;
 Expinfo.versions = versions;Expinfo.AnalysisFolder = AnalysisFolder;
 Expinfo.EDATfolder = EDATfolder;Expinfo.ExportFolder = ExportFolder;
 srate = 512;
+Expinfo.srate = srate;
+
+GHfolder = [AnalysisFolder 'N1P2_GH'];
+
+%codes and names table:
+Bnames = {'1','2a','2b','3a','3b'}';
+Bcodes = [10,20,30,40,50]';
+Bcodes_names = table(Bnames,Bcodes);
+blocks = Bnames;
+
+bls=1:5;
 %%

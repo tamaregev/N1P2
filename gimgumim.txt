@@ -1,0 +1,187 @@
+June 26 2019
+
+
+[sm,I]=sort(x);
+sr=y(I);
+length(sm)
+for ii=1:5000:length(sr), e((ii-1)/5000+1)=std(sr((1:5000)+5000*(ii-1))); end;
+ii
+length(sr)
+for ii=1:5000:length(sr), e((ii-1)/5000+1)=std(sr((1:5000)+ii)); end;
+ii
+length(e)
+plot(e)
+sqrt(mean(e.^2))
+isig=8
+itau=10
+taus(itau)
+data = singleAmps(whichSubjects,:,:,ipeak); % data is subjs x types x timepoints
+data = data(:);
+model = 1-RAcat(whichSubjects,:,:,isig,itau);
+model = model(:);
+itau=1
+isig=1
+data = singleAmps(whichSubjects,:,:,ipeak); % data is subjs x types x timepoints
+data = data(:);
+model = 1-RAcat(whichSubjects,:,:,isig,itau);
+model = model(:);
+modelf = model(isArt==0 & seqi>10); dataf = data(isArt==0 & seqi>10);
+model = modelf; data = dataf;
+newmodel = [ones(size(model)),model];
+SF = newmodel\data;%performs SS linear regression
+SFs(isig,itau,ipeak,:) = SF;
+newmodel = [ones(size(model)), model];
+predict = newmodel*SF;
+Errs(isig,itau,ipeak) = rms((data - predict));
+Errs(isig,itau,ipeak)
+ee=sqrt(mean(e.^2))
+trueE=Errs(isig,itau,ipeak)
+trueE-ee
+trueE/ee
+isig=8
+itau=12
+taus(itau)
+ipeak
+data = singleAmps(whichSubjects,:,:,ipeak); % data is subjs x types x timepoints
+data = data(:);
+model = 1-RAcat(whichSubjects,:,:,isig,itau);
+model = model(:);
+modelf = model(isArt==0 & seqi>10); dataf = data(isArt==0 & seqi>10);
+ERPfigure;
+x=modelf; y=dataf;
+plot(x,y,'.')
+title([whichpeaks{ipeak} '. Sigma = ' num2str(sigmas(isig)) ', tau = ' num2str(taus(itau))])
+xlabel('model');ylabel('data')
+model = modelf; data = dataf;
+newmodel = [ones(size(model)),model];
+SF = newmodel\data;%performs SS linear regression
+SFs(isig,itau,ipeak,:) = SF;
+newmodel = [ones(size(model)), model];
+predict = newmodel*SF;
+Errs(isig,itau,ipeak) = rms((data - predict));
+Errs(isig,itau,ipeak)
+trueE1=ans
+[sm,I]=sort(x);
+sr=y(I);
+e0=e;
+clear e
+for ii=1:5000:length(sr)-5000, e((ii-1)/5000+1)=std(sr((1:5000)+ii)); end;
+e
+plot(e)
+ee1=sqrt(mean(e.^2))
+ee
+trueE1
+trueE1-ee1
+trueE1/ee1
+SF
+plot(data,predict,'.')
+plot(predict,data,'.')
+hist(predict,1000)
+plot(predict,data,'.')
+grid
+corrcoef([data,predict])
+for ii=1:5000:length(sr)-5000, m((ii-1)/5000+1)=mean(sr((1:5000)+ii)); end;
+plot(m)
+plot(sm)
+plot(m)
+std(m)
+for ii=1:5000:length(sr)-5000, m((ii-1)/5000+1)=mean(sr((1:5000)+ii)); mm((ii-1)/5000+1)=mean(sm((1:5000)+ii)); end;
+hold all
+plot(mm)
+SF
+plot(mm*(-3.4952)-0.4362)
+trueE1^2-ee1^2
+trueE^2-ee^2
+plot(x,y,'.')
+hold off
+plot(x,y,'.')
+[sm,I]=sort(x);
+sr=y(I);
+b=dpss(1025,2,1);
+plot(b)
+sum(b)
+b=dpss(1025,4,1);
+plot(b)
+b=dpss(1025,2,1);
+b=b/sum(b);
+fsr=filtfilt(b,1,sr);
+plot([sr(:) fsr(:)])
+grid
+plot(fsr,sm,'.')
+FS
+SF
+ssm=sm*SF(2)+SF(1);
+plot(fsr,ssm,'.')
+plot(ssm,fsr,'.')
+line([0 -3],[0 -3],'col','r')
+plot(ssm(513:end-512),fsr(513:end-512),'.')
+line([0 -3],[0 -3],'col','r')
+var(fsr)
+essm=ssm(513:end-512);
+efsr=fsr(512:end-512);
+efsr=fsr(513:end-512);
+mean((efsr-essm).^2)
+1-mean((efsr-essm).^2)/var(efsr)
+324*31/4
+itau=1
+isig=1
+data = singleAmps(whichSubjects,:,:,ipeak); % data is subjs x types x timepoints
+data = data(:);
+model = 1-RAcat(whichSubjects,:,:,isig,itau);
+model = model(:);
+modelf = model(isArt==0 & seqi>10); dataf = data(isArt==0 & seqi>10);
+model = modelf; data = dataf;
+newmodel = [ones(size(model)),model];
+SF = newmodel\data;%performs SS linear regression
+SFs(isig,itau,ipeak,:) = SF;
+newmodel = [ones(size(model)), model];
+predict = newmodel*SF;
+Errs(isig,itau,ipeak) = rms((data - predict));
+Errs(isig,itau,ipeak)
+[sm,I]=sort(x);
+sr=y(I);
+fsr=filtfilt(b,1,sr);
+sf
+SF
+ssm=sm*SF(2)+SF(1);
+plot(ssm(513:end-512),fsr(513:end-512),'.')
+line([0 -3],[0 -3],'col','r')
+plot(ssm,fsr,'.')
+plot(x,y,'.')
+data = singleAmps(whichSubjects,:,:,ipeak); % data is subjs x types x timepoints
+data = data(:);
+model = 1-RAcat(whichSubjects,:,:,isig,itau);
+model = model(:);
+x=model; y=data;
+ERPfigure;
+plot(x(isArt==1),y(isArt==1),'.','markersize',12,'Color','r')
+hold on
+plot(x(seqi<10),y(seqi<10),'.','markersize',16,'Color','y')
+plot(x(seqi<5),y(seqi<5),'.','markersize',12,'Color','g')
+plot(x(isArt==0 & seqi>5),y(isArt==0 & seqi>5),'.','markersize',6,'Color','b')
+title([whichpeaks{ipeak} '. Sigma = ' num2str(sigmas(isig)) ', tau = ' num2str(taus(itau))])
+xlabel('model');ylabel('data')
+modelf = model(isArt==0 & seqi>10); dataf = data(isArt==0 & seqi>10);
+ERPfigure;
+x=modelf; y=dataf;
+plot(x,y,'.')
+title([whichpeaks{ipeak} '. Sigma = ' num2str(sigmas(isig)) ', tau = ' num2str(taus(itau))])
+xlabel('model');ylabel('data')
+model = modelf; data = dataf;
+newmodel = [ones(size(model)),model];
+SF = newmodel\data;%performs SS linear regression
+SFs(isig,itau,ipeak,:) = SF;
+newmodel = [ones(size(model)), model];
+predict = newmodel*SF;
+Errs(isig,itau,ipeak) = rms((data - predict));
+[sm,I]=sort(x);
+sr=y(I);
+fsr=filtfilt(b,1,sr);
+ssm=sm*SF(2)+SF(1);
+plot(x,y,'.')
+plot(ssm,fsr,'.')
+line([0 -3],[0 -3],\'col','r')
+line([0 -3],[0 -3],'col','r')
+efsr=fsr(513:end-512);
+essm=ssm(513:end-512);
+1-mean((efsr-essm).^2)/var(efsr)

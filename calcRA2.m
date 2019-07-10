@@ -1,4 +1,4 @@
-function [ RA, smpls, stimCode, seqInd ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold, Mis)
+function [ RA, smpls, stimCode, seqInd ] = calcRA2(  R0, sigma, tau, eventCoInd, SOA_threshold, Mis)
 %CALCRA calculates the expected RA (response adaptation) as in Herrmann
 %et al. 2014
 % 
@@ -8,6 +8,7 @@ function [ RA, smpls, stimCode, seqInd ] = calcRA(  R0, sigma, tau, expdata, eve
 % as documented in expdata.
 % 
 % Inputs:
+%  R0 - initial condition for RA in a new sequence. E.g. 0.5
 %  phaseName = 'Passive';
 %  sigma = 10;%MIDI
 %  tau = 1;%seconds

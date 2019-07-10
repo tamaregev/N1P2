@@ -1,4 +1,4 @@
-function [ RA, smpls, stimCode, seqInd ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold, Mis)
+function [ RA, smpls, stimCode, seqInd ] = calcRA_MMNchromaF(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold, Mis, bls, order)
 %CALCRA calculates the expected RA (response adaptation) as in Herrmann
 %et al. 2014
 % 
@@ -15,23 +15,46 @@ function [ RA, smpls, stimCode, seqInd ] = calcRA(  R0, sigma, tau, expdata, eve
 % 
 %   Written by Tamar Regev, Nov 2018
 % 
-block_list = expdata.(phaseName).block_list;
-nBlocks = length(block_list);
+
+%only relevant blocks:
+if length(bls)>1
+    %MMNchroma, Exp 1
+    relBlockTypes = bls;
+    phases = [1,3];
+    block_list = [];
+    for ip=1:length(phases)
+        block_list = [block_list, expdata.phases(phases(ip)).block_list];%all experiment
+    end
+    nBlocks = length(block_list);
+else
+    %MMNchromaF, Exp 2
+    relBlockTypes = 4;
+    phases = 2;
+    block_list = expdata.(phaseName).block_list;%all experiment
+    nBlocks = length(block_list);
+end
 blocks = expdata.(phaseName).blocks;
-nBlockTypes = length(blocks);
+nBlockTypes = length(relBlockTypes);
 trials = expdata.trials(strcmp({expdata.trials(:).phase_type},phaseName));
 stimCoInd = eventCoInd(~ismember(eventCoInd(:,1),[210,200,100,110,254,255]),:);
 newbli = find(eventCoInd(:,1)==100);%new block index in eventCoInd
-if(~(length(trials)==length(stimCoInd)))
+if(~(length(trials)==length(stimCoInd(ismember(floor(stimCoInd(:,1)/1000),phases)|floor(stimCoInd(:,1)/1000)>=10,1))))
     warning('nTrials is not equal in edat and events indexes')
 end
-if(~(length(newbli)==nBlocks))
+if(~(12==nBlocks))
     warning('nBlocks is not equal in edat and events indexes')
 end
 
 nTrialsPerBlock = expdata.(phaseName).blocks(1).num_trials;
-nStim = length(expdata.(phaseName).blocks(1).CODE_NOTES);
-whichBlocks = find(block_list==1);
+%this is for MMNchroma, fix code notes from standards and deviant
+CODE_STANDARDS = expdata.(phaseName).blocks(1).CODE_STANDARDS;
+CODE_DEVIANT = expdata.(phaseName).blocks(1).CODE_DEVIANT;
+
+CODE_NOTES = [CODE_STANDARDS, CODE_DEVIANT];
+CODE_NOTES = CODE_NOTES(order);
+
+nStim = length(CODE_NOTES);
+whichBlocks = find(block_list==relBlockTypes(1));
 if ~isnan(Mis)
     nChans = length(Mis);
     isnanMis = false;
@@ -45,14 +68,16 @@ stimCode = nan(nBlockTypes,length(whichBlocks),nTrialsPerBlock);%types x sequenc
 seqInd = nan(nBlockTypes,length(whichBlocks),nTrialsPerBlock);%types x sequences x timepoints
 
 for ibt = 1:nBlockTypes
-    MIDIs = expdata.(phaseName).blocks(ibt).MIDIs;%MIDIs of all stimuli
+    bt = relBlockTypes(ibt);
+    MIDIs = [freq2MIDI([expdata.(phaseName).blocks(bt).toneSynth.Fstandards{:}]) , freq2MIDI([expdata.(phaseName).blocks(bt).toneSynth.Fdeviants{:}])];
+    MIDIs = MIDIs(order);%MIDIs of all stimuli
     if isnanMis
         Mis = nan(length(MIDIs),1);
         for im = 1:length(MIDIs)
-            Mis(im) = MIDIs{im};
+            Mis(im) = MIDIs(im);
         end
     end
-    whichBlocks = find(block_list==ibt);        
+    whichBlocks = find(block_list==bt);        
     ib = 0;
     for bl = whichBlocks
         ib=ib+1;
@@ -73,8 +98,8 @@ for ibt = 1:nBlockTypes
                 else
                     rj = rj + 1;
                     prevRA = squeeze(RA(ibt,ib,:,j-1));
-                    note_code = trials(itrial-1).note_code;%current stimulus code
-                    Mprev = expdata.(phaseName).blocks(ibt).MIDIs{expdata.(phaseName).blocks(ibt).CODE_NOTES==note_code};%current stimulus MIDI
+                    note_code = trials(itrial-1).trial_code;%current stimulus code
+                    Mprev = MIDIs(CODE_NOTES==note_code);%current stimulus MIDI
                     RA(ibt,ib,:,j) = (prevRA + (1-prevRA) .* tuningCurve(Mis,Mprev,sigma)) .* exp(-SOA/tau);   
                 end
             end

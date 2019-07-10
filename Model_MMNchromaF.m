@@ -1,102 +1,89 @@
-%The Model as in Herrmann et al.
-% Nov 25 2018, Tamar Regev
+%Adapting from Model_N1P2 to MMNchroma experiment
+%May 3 2019
+
 %% Definitions
-macflag = false;
-switch macflag
-    case true
-        Definitions_N1P2_mac
-    case false
-        Definitions_N1P2
-end
-GHfolder = [AnalysisFolder 'N1P2_GH'];
-cd(GHfolder)
-sbjcts = 1:37;
-mss = [5,14];
-whichSubjects = sbjcts(~ismember(sbjcts,[badSubjects,mss]));
-
-grandFolder = [AnalysisFolder 'grandAverage'];
-mixedFolder = [AnalysisFolder 'MixedModel' filesep];
-modelFolder = [AnalysisFolder 'Model' filesep];
-
-srate = 512;
-Expinfo.srate = srate;
-
-%codes and names table:
-Bnames = {'1','2a','2b','3a','3b'}';
-Bcodes = [10,20,30,40,50]';
-Bcodes_names = table(Bnames,Bcodes);
-bls=1:5;
+cd('L:\Experiments\MMNchromaF\Analysis')
+Definitions_MMNchromaF;
+N1P2GHfolder = ['L:\Experiments\N1P2\Analysis\N1P2_GH'];
+addpath(N1P2GHfolder)
+bls = 2;
+order = [1 2 5 3 4];
+addpath('L:\Z backup\Tamar\fromZ\Documents\MATLAB\MatlabFunctions\mine')
 
 %% compare EDAT to events
+% don;t do this for MMNchroma because of recoding markers.
+%
+% s=13;
+% %load expdata and markers
+% FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
+% load([EDATfolder FileName '_expdata.mat' ])
+% %load and read markers
+% VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
+% [eventCoInd, ~]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
+% stimCoInd = eventCoInd(~ismember(eventCoInd(:,1),[210,200,100,110,254]),:);
+% trials = expdata.trials;
+% phaseName = 'Passive';
+% block_list = expdata.(phaseName).block_list;
+% nBlocks = length(block_list);
+% if(~length(trials)==length(stimCoInd))
+%     warning('nTrials is not equal in edat and events indexes')
+% end
+% newbli = find(eventCoInd(:,1)==100);%new block index
+% if(~length(newbli)==nBlocks)
+%     warning('nBlocks is not equal in edat and events indexes')
+% end
+% 
+% % compare SOAs
+% expdata_plannedSOA = nan(length(trials)-1,1);
+% expdata_measuredSOA = nan(length(trials)-1,1);
+% events_byIndSOA = nan(length(trials)-1,1);
+% sample = nan(length(trials)-1,1);
+% difs_reals = nan(length(trials)-1,1);
+% eventInd = nan(length(trials)-1,1);
+% 
+% for it = 1:(length(trials)-1)
+%     expdata_plannedSOA(it,1) = trials(it).SOA;
+%     expdata_measuredSOA(it,1) = trials(it+1).time-trials(it).time;
+%     events_byIndSOA(it,1) = (stimCoInd(it+1,2)-stimCoInd(it,2))/srate;
+%     sample(it,1) = stimCoInd(it,2);
+%     eventInd(it,1) = it;
+% end
+% difs_reals(:,:) = abs(expdata_measuredSOA-events_byIndSOA);
+% compareSOA = table(eventInd,sample,expdata_plannedSOA,expdata_measuredSOA,events_byIndSOA,difs_reals);
+% bigDifInd = find(difs_reals>=0.02);
+% compareSOA(bigDifInd,:)
+% %correct SOA is expdata_measuredSOA, because it is based on measured timing
 
-s=4;
-%load expdata and markers
-FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
-load([EDATfolder FileName '_expdata.mat' ])
-%load and read markers
-VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
-[eventCoInd, ~]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
-stimCoInd = eventCoInd(~ismember(eventCoInd(:,1),[210,200,100,110,254]),:);
-trials = expdata.trials;
-phaseName = 'Passive';
-block_list = expdata.(phaseName).block_list;
-nBlocks = length(block_list);
-if(~length(trials)==length(stimCoInd))
-    warning('nTrials is not equal in edat and events indexes')
-end
-newbli = find(eventCoInd(:,1)==100);%new block index
-if(~length(newbli)==nBlocks)
-    warning('nBlocks is not equal in edat and events indexes')
-end
-
-% compare SOAs
-expdata_plannedSOA = nan(length(trials)-1,1);
-expdata_measuredSOA = nan(length(trials)-1,1);
-events_byIndSOA = nan(length(trials)-1,1);
-sample = nan(length(trials)-1,1);
-difs_reals = nan(length(trials)-1,1);
-eventInd = nan(length(trials)-1,1);
-
-for it = 1:(length(trials)-1)
-    expdata_plannedSOA(it,1) = trials(it).SOA;
-    expdata_measuredSOA(it,1) = trials(it+1).time-trials(it).time;
-    events_byIndSOA(it,1) = (stimCoInd(it+1,2)-stimCoInd(it,2))/srate;
-    sample(it,1) = stimCoInd(it,2);
-    eventInd(it,1) = it;
-end
-difs_reals(:,:) = abs(expdata_measuredSOA-events_byIndSOA);
-compareSOA = table(eventInd,sample,expdata_plannedSOA,expdata_measuredSOA,events_byIndSOA,difs_reals);
-bigDifInd = find(difs_reals>=0.02);
-compareSOA(bigDifInd,:)
-%correct SOA is expdata_measuredSOA, because it is based on measured timing
+%
 %% calculate RA and plot - one participant
         
 %parameters:
 R0=0.5;
-phaseName = 'Passive';
-sigma = 2;%MIDI
+phaseName = 'MMN';
+sigma = 18;%MIDI
 tau = 2;%seconds
 SOA_threshold = 0.6;%seconds
-%Mis = nan;%
-Mis=[20:130]';
+Mis = nan;%for having only the 5 Mis of the stimuli
+%Mis=[20:130]';
+vmrkfiletag = 'ImportMarkers_ReCoded';
+%vmrkfiletag = 'RDI_imported';%for N1P2
 
-for s=2
-    %whichSubjects
-    
+for s=3
+    %whichSubjects    
     %load expdata and markers
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
     cd(EDATfolder)
     load([FileName '_expdata.mat' ])
     cd(AnalysisFolder)
     %load and read markers
-    VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
+    VMRKfile = [ExportFolder FileName  '_dt_' vmrkfiletag '.vmrk'];
     [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
 
     %calculate expected activity RA
-    [ RA, smpls, stimCodes, seqInd ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
+    [ RA, smpls, stimCodes, seqInd ] = calcRA_MMNchromaF( R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold, Mis, bls, order);
 % pause
     %plot RA
-    if 0
+    if 1
         ERPfigure;
         isp=0;
         for it=1:size(RA,1)
@@ -122,24 +109,28 @@ for s=2
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%
     % average RA as ERP
-    phaseName = 'Passive';
+    phaseName = 'MMN';
     ERRA = nan(size(stimCodes,1),size(stimCodes,2),5);
     CIRA = nan(size(stimCodes,1),size(stimCodes,2),5);
 
     for it = 1:size(stimCodes,1)
         for is = 1:size(stimCodes,2)
             Codes = squeeze(stimCodes(it,is,:));
-            Codes = Codes - floor(Codes/10)*10;
+            Codes = Codes - floor(Codes/1000)*1000;
+            Codes = Codes - floor(Codes/100)*100;
             whichCodes = unique(Codes);
+            whichCodes = whichCodes([2,3,1,4,5]);
             for ic=1:length(whichCodes)
-                Mj = expdata.(phaseName).blocks(it).MIDIs{expdata.(phaseName).blocks(it).CODE_NOTES==ic};%current stimulus MIDI
+                MIDIs = [freq2MIDI([expdata.(phaseName).blocks(it).toneSynth.Fstandards{:}]) , freq2MIDI([expdata.(phaseName).blocks(it).toneSynth.Fdeviants{:}])];
+                MIDIs = MIDIs(order);%MIDIs of all stimuli
+                Mj = MIDIs(whichCodes==whichCodes(ic));%current stimulus MIDI
                 is5first = squeeze(seqInd(it,is,:))<=5;
                 if isnan(Mis)
-                    ERRA(it,is,ic) = mean(RA(it,is,ic,Codes==ic),4);
-                    CI = Confidence(RA(it,is,ic,Codes==ic & ~is5first));
+                    ERRA(it,is,ic) = mean(RA(it,is,ic,Codes==whichCodes(ic)),4);
+                    CI = Confidence(RA(it,is,ic,Codes==whichCodes(ic) & ~is5first));
                 else
-                    ERRA(it,is,ic) = mean(RA(it,is,Mis==Mj,Codes==ic),4);
-                    CI = Confidence(RA(it,is,Mis==Mj,Codes==ic & ~is5first));
+                    ERRA(it,is,ic) = mean(RA(it,is,Mis==Mj,Codes==whichCodes(ic)),4);
+                    CI = Confidence(RA(it,is,Mis==Mj,Codes==whichCodes(ic) & ~is5first));
                 end
                 CIRA(it,is,ic) = ERRA(it,is,ic)-CI(2);
             end
@@ -152,7 +143,7 @@ for s=2
     %plot(ERRAm','linewidth',2)
     errorbar(ERRAm',CIRAm','linewidth',2)
     set(gca,'fontsize',14)
-    legend(Bnames)
+    legend(blocks{bls})
     suptitle(['Subj ' num2str(s) ', Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
 end
 %% calculate RA - all participants, taus, sigmas
@@ -162,14 +153,16 @@ saveFolder = [modelFolder date filesep];
 
 %parameters:
 R0=0.5;
-phaseName = 'Passive';
-%sigmas = [1:12,14,16,18];%MIDI
-sigmas = [1:2:19];%MIDI
-taus = [0.2:0.6:30];%seconds
+phaseName = 'MMN';
+%as in N1P2 - 19-Dec-2018 : full. sigmas 1:18. taus 0.2:0.2:10
+sigmas = [1:15];%MIDI
+taus = [0.01:0.05:1];%seconds
 SOA_threshold = 0.6;%seconds
 %Mis = (20:130)';
 Mis = nan; %for having only the 5 Mis of the stimuli
 artIndss = cell(size(whichSubjects));
+vmrkfiletag = 'ImportMarkers_ReCoded';
+%vmrkfiletag = 'RDI_imported';%for N1P2
 
 tictot = tic;
 for s=whichSubjects
@@ -179,7 +172,7 @@ for s=whichSubjects
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
     load(['D' EDATfolder(2:end) FileName '_expdata.mat' ])
     %load and read markers
-    VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
+    VMRKfile = [ExportFolder FileName  '_dt_' vmrkfiletag '.vmrk'];
     [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
     artIndss{s} = artInd;
     fprintf('Done\n')
@@ -189,7 +182,8 @@ for s=whichSubjects
         for tau = taus
             %calculate expected activity RA
             if sigma == sigmas(1) && tau == taus(1)
-                [ RA, smpls, stimCodes, seqInds ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
+                [ RA, smpls, stimCodes, seqInds ] = calcRA_MMNchromaF( R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold, Mis, bls, order);
+               
                 if s==whichSubjects(1)
                     %initialize only once
                     smplss = nan([whichSubjects(end),size(smpls)]); 
@@ -200,14 +194,14 @@ for s=whichSubjects
                     RAs_SigTau = single(RAs_SigTau);
                 end
             else
-                [ RA, ~, ~, ~ ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
+                [ RA, ~, ~, ~ ] = calcRA_MMNchromaF(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis,bls,order);
             end
-            RAs_SigTau(s,:,:,:,:,sigmas==sigma,taus==tau) = RA;
+            RAs_SigTau(s,:,:,:,1:size(RA,4),sigmas==sigma,taus==tau) = RA;
             %clear RA
             if sigma == sigmas(1) && tau == taus(1)%once per subject            
-                smplss(s,:,:,:) = smpls;
-                stimCodess(s,:,:,:) = stimCodes;
-                seqIndss(s,:,:,:) = seqInds;
+                smplss(s,:,:,1:size(smpls,3)) = smpls;
+                stimCodess(s,:,:,1:size(stimCodes,3)) = stimCodes;
+                seqIndss(s,:,:,1:size(seqInds,3)) = seqInds;
             end
             fclose('all');
 %             disp(['Done in ' num2str(toc(ticsigtau)) ' sec.'])
@@ -225,7 +219,8 @@ disp(['Done all in ' num2str(toc(tictot)) ' sec.'])
 
 %% compare to ERPs -
 %% calc. expected peaks
-RAdate = '10-Apr-2019';
+%RAdate = '22-May-2019';
+RAdate = '17-Jun-2019';
 loadFolder = [modelFolder RAdate filesep];
 saveFolder = loadFolder;
 
@@ -238,39 +233,40 @@ fprintf(['Done in %4.1f sec \n'], toc)
 
 nStim = 5;
 %initiatize peaks array
-RApeaks = nan(whichSubjects(end),length(Bnames),nStim,nStim,length(sigmas),length(taus));%subjects x types x cond x prevcond x sigmas x taus
+RApeaks = nan(whichSubjects(end),length(bls),nStim,nStim,length(sigmas),length(taus));%subjects x types x cond x prevcond x sigmas x taus
 conditions = {'note 1','note 2','note 3','note 4','note 5'};
 prevConditions = {'note 1','note 2','note 3','note 4','note 5'};
-STIMcodes = [1,2,3,4,5];
+
+%STIMcodes = [1,2,3,4,5];
+STIMcodes = [20,30,11,40,50];
+EventCodes=cell(1,length(conditions));
+blockCode = 400; phaseCode = 2000;
+for i=1:length(conditions)
+    EventCodes{i} = STIMcodes(i) + blockCode + phaseCode;
+end
+prevEventCodes = EventCodes;
 
 tictot = tic;
-for bl = 1:5
+ibl=0;
+for bl = bls
     ticblock = tic;
-    
-    blockName = Bnames{bl};
+    ibl=ibl+1;
+    blockName = blocks{bl};
     disp(blockName)
-    Bcode = Bcodes_names.Bcodes(strcmp(Bcodes_names.Bnames,blockName));
 
-    EventCodes=cell(1,length(conditions));
-    for i=1:length(conditions)
-        EventCodes{i} = Bcode + STIMcodes(i);
-    end
-    prevEventCodes = EventCodes;
-
-    grandRA = calcGrandRA_CondPrev( bl, whichSubjects, RAs_SigTau, EventCodes, prevEventCodes, stimCodess, smplss, seqIndss, artIndss);
-    RApeaks(:,bl,:,:,:,:) = squeeze(grandRA);
+    grandRA = calcGrandRA_CondPrev( ibl, whichSubjects, RAs_SigTau, EventCodes, prevEventCodes, stimCodess, smplss, seqIndss, artIndss);
+    RApeaks(:,ibl,:,:,:,:) = squeeze(grandRA);
 end
 save([saveFolder 'RApeaks'],'RApeaks')
 %% Documentation of runs
-%19-Dec-2018 : full
-%23-Dec-2018 : full with larger sigmas, half resolution, only odd sigmas
-%24-Dec-2018 : smaller taus
-%27-Dec-2018 : smaller sigmas
-%08-Apr-2019 : larger range of taus with a lower resolution 0.1:0.3:15
-%10-Apr-2019 : taus 0.1:0.6:30
-%23-Apr-2019 : around the minimum for STE estimation for N1: 
+%20-May-2019 : full as in - N1P2 19-Dec-2018 
+%sigmas 1:18, taus 0.2:0.2:10
+%22-May-2019 : larger taus
+%sigmas 1:18, taus [0.2:0.2:5,5.5:0.5:7,8:20]
+%%03-Jun-2019 : for calculating ellipsoid of N1: sigmas 1:9 taus 0.9:0.1:7
+%17-Jun-2019 : for checking lower bound on tau of P2 : sigmas = 1:15, taus= 0.01:0.05:1
 %% average and plot U-shape
-RAdate = '24-Dec-2018';
+RAdate = '22-May-2019';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
 load([loadFolder 'Params'])
@@ -288,9 +284,10 @@ CIRA = nan(nStim,size(stimCodess,2));
 %for each subject:
 for s = whichSubjects
     stimCodes = squeeze(stimCodess(s,:,:,:));
-    for it = 1:size(stimCodes,1)
-        Codes = squeeze(stimCodes(it,1,:));
-        Codes = Codes - floor(Codes/10)*10;
+    for it = 1
+        Codes = squeeze(stimCodes(1,:));
+        Codes = Codes - floor(Codes/100)*100;
+        Codes = Codes - floor(Codes/1000)*1000;
         whichCodes = unique(Codes);
         ERRA(s,:,it) = nanmean(RApeaks(s,it,:,:,sigmas==sigma,taus==tau),4);
     end
@@ -298,13 +295,13 @@ for s = whichSubjects
         ERPfigure;
         plot(squeeze(ERRA(s,:,:)),'linewidth',2)
         set(gca,'fontsize',14)
-        legend(Bnames)
+        legend(bls)
         suptitle(['Subj ' num2str(s) ', Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
     end
 end
 
 %grand average across subjects:
-for it = 1:size(stimCodes,1)
+for it = 1
     for ic = 1:nStim
         CI = Confidence(ERRA(:,ic,it));
         CIRA(ic,it) = squeeze(nanmean(ERRA(:,ic,it),1)) - CI(1);
@@ -316,10 +313,10 @@ ERPfigure;
 plot(squeeze(nanmean(ERRA(:,:,:),1)),'linewidth',2)
 %errorbar(squeeze(nanmean(ERRA(:,:,:),1)),CIRA,'linewidth',2)
 set(gca,'fontsize',14)
-legend(Bnames)
+legend(blocks{bls})
 suptitle(['Grand RA, Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
 %% average and plot prevcond bars
-RAdate = '24-Dec-2018';
+RAdate = '22-May-2019';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
 load([loadFolder 'Params'])
@@ -327,28 +324,28 @@ load([loadFolder 'Metadata'])
 
 
 sigma = 7;
-tau = 0.01;
+tau = 2;
 nStim = 5;
 
-ERRA = nan(whichSubjects(end),nStim,nStim,size(stimCodess,2));
+ERRA = nan(whichSubjects(end),nStim,nStim,1);
 %for each subject:
 for s = whichSubjects
     stimCodes = squeeze(stimCodess(s,:,:,:));
-    for it = 1:size(stimCodes,1)
-        ERRA(s,:,:,it) = RApeaks(s,it,:,:,sigmas==sigma,taus==tau);
+    for it = 1
+        ERRA(s,:,:) = RApeaks(s,it,:,:,sigmas==sigma,taus==tau);
     end
 end
 
-for it=1:5
+for it=1:length(bls)
     ERPfigure;
-    set(gcf,'Position',[10+300*it 10 300 700])
+    %set(gcf,'Position',[10+300*it 0 300 700])
     for curr = 1:5 
         subplot(5,1,curr)
         RA = squeeze(nanmean(ERRA(:,curr,:,it),1));
         bar(1:5,RA,'linewidth',2)
         %errorbar(squeeze(nanmean(ERRA(:,:,:),1)),CIRA,'linewidth',2)
         set(gca,'fontsize',14)
-        legend(Bnames)
+        legend(blocks(it))
         title(['Curr note ' num2str(curr)])
     end
     xlabel('previous note')
@@ -358,10 +355,11 @@ end
 %% fitting parameters to all block types together -
 %% find best scaling factor
 weightedFlag = false;
+bestSFflag = true;
+
 %load Model
-%RAdate = '08-Apr-2019';
+RAdate = '17-Jun-2019';
 %RAdate = '19-Dec-2018';
-RAdate = '19-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks.'])
 load([loadFolder 'Params'])
@@ -369,16 +367,19 @@ load([loadFolder 'Params'])
 %load data
 electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
 addtag = '';
-peakdate = '30-Oct-2018';
+peakdate = '16-Nov-2018';
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 whichpeaks = {'N1','P2'};
 peakAmps = nan(size(RApeaks(whichSubjects,:,:,:,1,1)));
         
 SFs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks));
     
+bls = 2;
 for ipeak = 1:length(whichpeaks)
-    for bl=1:length(allPeak_amps)
-        peakAmps(:,bl,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
+    ibl=0;
+    for bl=bls
+        ibl=ibl+1;
+        peakAmps(:,ibl,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
         %subj x bl x con x prevcon 
 %         peakAmps(:,bl,:) = allGrandcon_amps{bl}(whichSubjects,:,ipeak);
     end
@@ -392,8 +393,11 @@ for ipeak = 1:length(whichpeaks)
             model = model(:);model(isnan(model))=[];
             if weightedFlag
                 SFs(isig,itau,ipeak) = model\(data./ste);%performs SS linear regression
-            else
+            elseif bestSFflag
                 SFs(isig,itau,ipeak) = model\data;%performs SS linear regression
+            else
+                SFs(isig,itau,ipeak) = max(abs(data))*sign(data(1));
+                %SFs(isig,itau,ipeak) = max(abs(data))*sign(data(1))/max(model);
             end
         end
     end
@@ -405,20 +409,32 @@ for ipeak=1:length(whichpeaks)
 end
 suptitle('scaling factors')
 saveFolder = loadFolder;
-save([saveFolder 'scalingFactors'],'SFs','sigmas','taus','whichpeaks')                   
+if bestSFflag
+    save([saveFolder 'scalingFactors_bestSF'],'SFs','bestSFflag','sigmas','taus','whichpeaks')                   
+else
+    save([saveFolder 'scalingFactors_constSF'],'SFs','bestSFflag','sigmas','taus','whichpeaks')
+end
 %% plot on top of bargraph N1 data
+bestSFflag = false;
 
-RAdate = '08-Apr-2019';
+RAdate = '20-May-2019';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
 load([loadFolder 'Params'])
-save([loadFolder 'scalingFactors'],'SFs')
+if bestSFflag
+    load([loadFolder 'scalingFactors_bestSF'])
+else
+    load([loadFolder 'scalingFactors_constSF'])
+end
+whichpeaks = {'N1','P2'};
 peak = 'N1';
 ipeak = find(strcmp(whichpeaks,peak));
+tol = 0.0001;
+%as in https://www.mathworks.com/matlabcentral/answers/57444-faq-why-is-0-3-0-2-0-1-not-equal-to-zero
 
 plotflag = true;
 
-[xlocs,N1_means] = BarPlotN1(plotflag,peak);
+[xlocs,N1_means] = BarPlotN1_MMNchromaF(plotflag,peak);
 title([peak ' data (bars) versus model (lines)'])
 %notice - peak_means dim is blocks X notes whereas ERR is subj X notes X
 %blocks. For historical reasons.
@@ -426,8 +442,8 @@ meanV = mean(mean(N1_means));
 maxV = max(max(abs(N1_means)));
 Predict = squeeze(nanmean((1-RApeaks)));
 PredictU = squeeze(nanmean(Predict,3));
-Psigs = [1,3,11,17];
-Pts = [0.1,2.2,4.6];
+Psigs = [1,5,10];
+Pts = [1,5,10];
 nComb=numel(Psigs)*numel(Pts);
 cmap = zeros(numel(Psigs)*numel(Pts),3);
 cmap(1:ceil(numel(Psigs)*numel(Pts)/2),1) = linspace(0,1,ceil(numel(Psigs)*numel(Pts)/2));
@@ -436,14 +452,18 @@ cmap(ceil(numel(Psigs)*numel(Pts)/2):end,2) = linspace(0,0.8,floor(numel(Psigs)*
 cmap(ceil(numel(Psigs)*numel(Pts)/2):end,3) = linspace(0,0.8,floor(numel(Psigs)*numel(Pts)/2)+1);
 
 hold on
-for bl=1:length(Bnames)
-    xind=((bl-1)*length(Bnames)+1):(bl*length(Bnames));
+bls=2;
+Bnames = blocks(bls);
+ibl=0;
+for bl=bls
+    ibl=ibl+1;
+    xind=((bl-1)*5+1):(bl*5);
     ist=0;cbarTicks=cell(1,nComb);
     for sig = Psigs
         for t = Pts
             ist = ist+1;
-            SF = SFs(sig==sigmas,t==taus,ipeak);
-            RAs = squeeze(nanmean(nanmean(RApeaks(whichSubjects,bl,:,:,sig==sigmas,t==taus)),4));
+            SF = SFs(sig==sigmas,abs(t-taus)<tol,ipeak);
+            RAs = squeeze(nanmean(nanmean(RApeaks(whichSubjects,ibl,:,:,sig==sigmas,abs(t-taus)<tol)),4));
             Predict = 1-RAs;
             cbarTicks{ist}=['Sig=' num2str(sig) ', tau=' num2str(t)];
             plot(xlocs(xind),Predict'.*SF,'Color',cmap(ist,:),'linew',2)
@@ -455,32 +475,42 @@ colormap(ax,cmap);c=colorbar;
 set(ax,'visible','off')
 set(c,'Ticks',1/nComb:1/nComb:1)
 set(c,'TickLabels',cbarTicks)
-set(c,'Position',[0.85,0.1,0.02,0.5])
+set(c,'Position',[0.7,0.1,0.02,0.5])
 set(c,'YAxisLocation','right')
 set(c,'fontsize',14)
 %% calc and plot model error
+weightedFlag = false;
+bestSFflag = true;
 
 %load Model
-%RAdate = '08-Apr-2019';
-RAdate = '19-Dec-2018';
+%RAdate = '10-Apr-2019';
+RAdate = '20-May-2019';
 loadFolder = [modelFolder RAdate filesep];
 load([loadFolder 'RApeaks'])
 load([loadFolder 'Params'])
-load([loadFolder 'scalingFactors'])                   
+
+if bestSFflag
+    load([loadFolder 'scalingFactors_bestSF'])
+else
+    load([loadFolder 'scalingFactors_constSF'])
+end
+                
 
 %load data
 electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
 addtag = '';
-peakdate = '30-Oct-2018';
+peakdate = '16-Nov-2018';
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 whichpeaks = {'N1','P2'};
 peakAmps = nan(size(RApeaks(whichSubjects,:,:,:,1,1)));
 
 Errs = nan(size(RApeaks,5),size(RApeaks,6),length(whichpeaks));
-
+bls=2;
 for ipeak = 1:length(whichpeaks)
-    for bl=1:length(allPeak_amps)
-        peakAmps(:,bl,:,:) = allPeak_amps{bl}(whichSubjects,:,:,ipeak);
+    ibl=0;
+    for bl=bls
+        ibl=ibl+1;
+        peakAmps(:,ibl,:,:) = allPeak_amps{bl}(whichSubjects,order,order,ipeak);
         %subj x bl x con x prevcon 
 %         peakAmps(:,bl,:) = allGrandcon_amps{bl}(whichSubjects,:,ipeak);
     end
@@ -493,15 +523,22 @@ for ipeak = 1:length(whichpeaks)
             model = 1-nanmean(RApeaks(whichSubjects,:,:,:,isig,itau));
             model = model(:);model(isnan(model))=[];
             SF = SFs(isig,itau,ipeak);
-            %this was a mistake:
-            %Errs(isig,itau,ipeak) = rms((data - model*SF)/mean(ste));%performs SS linear regression
-            Errs(isig,itau,ipeak) = rms((data - model*SF)./ste);%performs SS linear regression
+            if weightedFlag
+                Errs(isig,itau,ipeak) = rms((data - model*SF)./ste);%performs SS linear regression
+            else
+                %this was a mistake:
+                Errs(isig,itau,ipeak) = rms((data - model*SF)/mean(ste));%performs SS linear regression
+                %Errs(isig,itau,ipeak) = rms((data - model*SF));%performs SS linear regression
+            end
         end
     end
 end
 saveFolder = loadFolder;
-save([saveFolder 'Errs'],'Errs','sigmas','taus','whichpeaks')                   
-
+if bestSFflag
+    save([saveFolder 'Errs_bestSF'],'Errs','bestSFflag','sigmas','taus','whichpeaks')                   
+else
+    save([saveFolder 'Errs_constSF'],'Errs','bestSFflag','sigmas','taus','whichpeaks')                   
+end
 
 ERPfigure;
 set(gcf,'Position', [50 50 1200 450])
@@ -511,30 +548,38 @@ bestaus = nan(2,1);
 bestsigmas = nan(2,1);
 for ipeak=1:length(whichpeaks)
     ax(ipeak) = subplot(1,2,ipeak);
-    [row col]=find(Errs(:,:,ipeak)==min(min(Errs(:,:,ipeak))));
+    [row, col]=find(Errs(:,:,ipeak)==min(min(Errs(:,:,ipeak))));
     imagesc(taus,sigmas,Errs(:,:,ipeak));
-    caxis([errmin errmax])
-    
+    %caxis([errmin errmax])
+     if exist('bestSFflag','var')
+        if ~bestSFflag
+            caxis([1.3,2])
+        end
+    end
     title(whichpeaks{ipeak})
     xlabel('\tau (sec)','fontsize',20);
     ylabel('\sigma (semitones)','fontsize',20)
     hold on
     disp([whichpeaks{ipeak} ': sigma = ' num2str(sigmas(row)) ', tau = ' num2str(taus(col)) ])
-    plot([taus(col) taus(col)],[sigmas(1) sigmas(end)],'Color',[1 1 1],'linewidth',3)
-    plot([taus(1) taus(end)],[sigmas(row) sigmas(row)],'Color',[1 1 1],'linewidth',3)
-    set(gca,'fontsize',14)
+    plot([taus(col) taus(col)],[sigmas(1) sigmas(end)],'Color',[1 0 0],'linewidth',1)
+    plot([taus(1) taus(end)],[sigmas(row) sigmas(row)],'Color',[1 0 0],'linewidth',1)
+    set(gca,'fontsize',20)
     bestaus(ipeak) = taus(col);
     bestsigmas(ipeak) = sigmas(row);
-    text(4,15,['(' num2str(taus(col)) ',' num2str(sigmas(row)) ')'],'Color',[1,1,1],'fontsize',22);
+    text(4,15,['(' num2str(taus(col)) ',' num2str(sigmas(row)) ')'],'Color',[1,0,0],'fontsize',22);
 end
 suptitle('normalized error between model and data')
 for ipeak = 1:length(whichpeaks)
     c(ipeak) = colorbar(ax(ipeak));
     ylabel(c(ipeak),'normalized error (STE units)','fontsize',16)
 end
-save([saveFolder filesep 'bestFitParams'],'bestaus','bestsigmas')
-saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'fig')
-saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'jpg')
+if bestSFflag
+    save([saveFolder filesep 'bestFitParams_bestSF'],'bestaus','bestsigmas')
+else
+    save([saveFolder filesep 'bestFitParams_constSF'],'bestaus','bestsigmas')
+end
+% saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'fig')
+% saveas(gcf,[AnalysisFolder 'Figures\model\norm_err_model_data_' date],'jpg')
 %% calc and plot model error - contours
 
 %load Model

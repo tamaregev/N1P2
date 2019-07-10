@@ -12,19 +12,21 @@ cmap = [1 0 1;...
         1 0.6 0;...
         0 0.7 0;...
         0 0 1 ];
-fos = 16;
+fos = 12;
 
 hf=ERPfigure;
-set(gcf,'units','normalized','outerposition',[0 0 1 1])
+set(gcf,'units','normalized','outerposition',[0 0 0.6 1])
 
-xvars = {'currMIDI','dist_mean','size_jump'};
-xnames = {'curr. freq.','dist. from mean freq.','dist. from prev. freq.'};
+%xvars = {'currMIDI','dist_mean','size_jump'};
+xvars = {'dist_mean','size_jump'};
+%xnames = {'curr. freq.','dist. from mean freq.','dist. from prev. freq.'};
+xnames = {'dist. from mean freq.','dist. from prev. freq.'};
 nx=length(xvars);
 
 for ipeak = 1:2
     peak = whichpeaks{ipeak};
     for ix=1:length(xvars)
-        subplot(2,3,(ipeak-1)*nx+ix)
+        subplot(2,length(xvars),(ipeak-1)*nx+ix)
         x=nan(1,5*4*length(ibs));y=nan(1,5*4*length(ibs));
         iib=0;R=cell(length(ibs));p=cell(length(ibs));
         for ib=ibs
@@ -97,6 +99,8 @@ for ipeak = 1:2
 %            text(xlims(1),ylims(2)-(iib+1)*dy+dy/2,['R=' num2str(Rtot(1,2),2) ', p=' num2str(ptot(1,2),2)],'Color','k','fontsize',fos);
             text(xlims(1),ylims(2)-(iib+1)*dy+dy/2,['R=' num2str(Rtot(1,2),2)],'Color','k','fontsize',fos);
         end
+        axis([xlims(1),xlims(2),ylims(1),ylims(2)])
+
     end
 end
 % legendstring = {};
@@ -105,9 +109,9 @@ end
 %     legendstring(iib)={[num2str(ibs(iib))]};
 % end
     
-legendstring = {'1','2a','2b','3a','3b'};
-lh=legend(legendstring,'linear fit');
-set(lh,'position',[0.93 0.33 0.05 0.1],'fontsize',16)
+% legendstring = {'1','2a','2b','3a','3b'};
+% lh=legend(legendstring,'linear fit');
+% set(lh,'position',[0.93 0.33 0.05 0.1],'fontsize',16)
 
 end
 

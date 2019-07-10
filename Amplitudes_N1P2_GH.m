@@ -29,8 +29,8 @@ if 1 %params
     addtag = '';
     dt = 5;%ms before and after peak - window for calculating N1-P2 amp
     select_largest = true;
-    plotflag = true;%plot automatically selected peaks.
-    pauseflag = true;
+    plotflag = false;%plot automatically selected peaks.
+    pauseflag = false;
     mode = 'Bp1-20';
     srate = 512;
     bslwin = [-0.1,0];
@@ -145,13 +145,16 @@ for ipeak = 1:2
         allSubjects = 1:length(Subjects);
         includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
     else
-        mss = [];
-        for bl=1:length(allGrandcon_as_median)
-            allGrandcon_as_median{bl}(:,:,ipeak);
-            [r, c]=find(allGrandcon_as_median{bl}(:,:,ipeak));
-            mss = [mss, r'];
-        end
-        mss = unique(mss);
+        %this is for calculating mss:
+%         mss = [];
+%         for bl=1:length(allGrandcon_as_median)
+%             allGrandcon_as_median{bl}(:,:,ipeak);
+%             [r, c]=find(allGrandcon_as_median{bl}(:,:,ipeak));
+%             mss = [mss, r'];
+%         end
+%         mss = unique(mss);
+        %read mss from definitions:
+        mss = [5,14];%couldn't find a peak
         allSubjects = 1:length(Subjects);
         includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
     end    
@@ -492,14 +495,15 @@ if include
     allSubjects = 1:length(Subjects);
     includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
 else
-    mss = [];
-    for bl=1:length(allGrandcon_as_median)
-        for ipeak = 1:2%here I exclude from all analysis any subject that either had a problem in the N1 or in the P2s
-            [r, c]=find(allGrandcon_as_median{bl}(:,:,ipeak));
-            mss = [mss, r'];
-        end
-    end
-    mss = unique(mss);
+%     mss = [];
+%     for bl=1:length(allGrandcon_as_median)
+%         for ipeak = 1:2%here I exclude from all analysis any subject that either had a problem in the N1 or in the P2s
+%             [r, c]=find(allGrandcon_as_median{bl}(:,:,ipeak));
+%             mss = [mss, r'];
+%         end
+%     end
+%     mss = unique(mss);
+mss=[5 14];
     allSubjects = 1:length(Subjects);
     includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
 end
@@ -510,3 +514,9 @@ for ib=[1,2,3,4,5]
         lmes{ib,i} = fitlme(allTables.(blocks{ib}),formulas{i});
     end
 end
+%% export to excell
+Folder = 'L:\Experiments\N1P2\Geffen project';
+for ib = 1:length(blocks)
+    writetable(allTables.(blocks{ib}),[Folder filesep blocks{ib} 'Table.xlsx'])
+end
+

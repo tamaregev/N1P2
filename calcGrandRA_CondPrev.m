@@ -24,8 +24,8 @@ for seq = 1:size(RAs_SigTau,3)
         stims(2:end) = stimCodess(s,bl,seq,2:end);    
         for con=1:length(EventCodes)
             for prevcon = 1:length(prevEventCodes)
-                stimsInd_prev = stims_prev == prevEventCodes{prevcon};
-                stimInd = stims == EventCodes{con};
+                stimsInd_prev = ismember(stims_prev, prevEventCodes{prevcon});
+                stimInd = ismember(stims, EventCodes{con});
                 if any(stimsInd_prev & stimInd)
                     grandRA(s,1,seq,con,prevcon,:,:) = mean(RAs_SigTau(s,bl,seq,con,squeeze(stimInd & stimsInd_prev),:,:),5);
                 end
