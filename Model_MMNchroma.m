@@ -2,13 +2,13 @@
 %May 3 2019
 
 %% Definitions
-cd('L:\Experiments\MMNchroma\Analysis')
+cd('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
 Definitions_MMNchroma;%new idea for the first time! move definitions into a separate script!
 
 order = cs;
-N1P2GHfolder = ['L:\Experiments\N1P2\Analysis\N1P2_GH'];
+N1P2GHfolder = ['S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH'];
 
-addpath('L:\Z backup\Tamar\fromZ\Documents\MATLAB\MatlabFunctions\mine')
+addpath('S:\Lab-Shared\Z backup\Tamar\fromZ\Documents\MATLAB\MatlabFunctions\mine')
 addpath(N1P2GHfolder)
 %% compare EDAT to events
 % don;t do this for MMNchroma because of recoding markers.
@@ -165,7 +165,7 @@ R0=0.5;
 phaseName = 'stimParamsBlocksMMN';
 %as in N1P2 - 19-Dec-2018 : full. sigmas 1:18. taus 0.2:0.2:10
 sigmas = [1:15];%MIDI
-taus = [0.01:0.05:1];%seconds
+taus = [0.2:0.2:5];%seconds
 SOA_threshold = 0.6;%seconds
 %Mis = (20:130)';
 Mis = nan; %for having only the 5 Mis of the stimuli
@@ -182,19 +182,19 @@ for s=whichSubjects
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
     if length(sessions{s})>1
         %fix for s23:
-        load(['D' EDATfolder(2:end) FileName '2_expdata.mat' ])
+        load([EDATfolder FileName '2_expdata.mat' ])
     else
-        load(['D' EDATfolder(2:end) FileName '_expdata.mat' ])
+        load([EDATfolder FileName '_expdata.mat' ])
     end
     %load and read markers
     VMRKfile = [ExportFolder FileName  '_dt_' vmrkfiletag '.vmrk'];
     [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
     artIndss{s} = artInd;
     fprintf('Done\n')
-    for sigma = sigmas
+    for sigma = sigmas(1)
         ticsig = tic;
         fprintf(['Subj = %2.0f, sigma = %2.2f'],s,sigma)
-        for tau = taus
+        for tau = taus(1)
             %calculate expected activity RA
             if sigma == sigmas(1) && tau == taus(1)
                 [ RA, smpls, stimCodes, seqInds ] = calcRA_MMNchroma(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis,bls,order);
@@ -211,6 +211,7 @@ for s=whichSubjects
             else
                 [ RA, ~, ~, ~ ] = calcRA_MMNchroma(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis,bls,order);
             end
+            seqlens(s)=size(RA,4);
             RAs_SigTau(s,:,:,:,1:size(RA,4),sigmas==sigma,taus==tau) = RA;
             %clear RA
             if sigma == sigmas(1) && tau == taus(1)%once per subject            
@@ -230,6 +231,7 @@ save([saveFolder 'RAs_SigTau'],'RAs_SigTau','-v7.3')
 fprintf(['done saving in %2.2f sec.\n'],toc(ticsaving))
 save([saveFolder 'Metadata'],'smplss','stimCodess','seqIndss','artIndss')
 save([saveFolder 'Params'],'sigmas','taus','Mis','R0','SOA_threshold')
+save([saveFolder 'TrialsPerSeq'],'seqlens')
 disp(['Done all in ' num2str(toc(tictot)) ' sec.'])
 
 %% compare to ERPs -

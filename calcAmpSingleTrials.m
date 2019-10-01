@@ -20,23 +20,58 @@ ERPsamps = round(srate*ERPwin/1000);
 %exp specific:
 switch ExpN
     case 1
+        addpath(['S:\Lab-Shared\Experiments\MMNchroma\Analysis'])
+        Definitions_MMNchroma
+        peakdate = '18-Nov-2018';
+        
+        nodeName = 'ImportMarkers_ReCoded';
+        %load example expdata to calculate nTrialsPerBlock
+        s=whichSubjects(1);
+        load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s}(1) '_expdata.mat' ])
+        phaseName = 'stimParamsBlocksMMN';
+        nTrialsPerBlock = expdata.(phaseName)(1).num_trials;
+        block_list = [expdata.phases(1).block_list expdata.phases(3).block_list];
+        nBlocksPerType = sum(block_list==block_list(1));
+        STIMcodes = [20,30,11,40,50];
+        order = cs;
+
     case 2
+        addpath(['S:\Lab-Shared\Experiments\MMNchromaF\Analysis'])
+        Definitions_MMNchromaF
+        peakdate = '16-Nov-2018';
+        nodeName = 'ImportMarkers_ReCoded';
+        %load example expdata to calculate nTrialsPerBlock
+        s=whichSubjects(1);
+        load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s}(1) '_expdata.mat' ])
+        phaseName = 'MMN';
+        nTrialsPerBlock = expdata.(phaseName).blocks(1).num_trials;
+        block_list = expdata.(phaseName).block_list;
+        nBlocksPerType = sum(block_list==block_list(1));
+        
+        STIMcodes = [20,30,11,40,50];
+        order = cs;
+        
+        %codes and names table:
+        names = {'Training_pure','Training_shep','MMN_F_pure','MMN_Fctrl_pure','MMN_classic_pure','MMN_F_shep','MMN_Fctrl_shep','MMN_classic_shep','Perception_pure','Perception_shep','MMN_classic_original_pure','MMN_classic_original_shep'}';
+        PBcodes = [1200, 1400, 2300, 2400, 2500, 2800, 2900, 21000, 3200, 3400, 21100, 21200]';
+        codes_names = table(names,PBcodes);
+
     case 3
         Definitions_N1P2
         
         %load data
         peakdate = '30-Oct-2018';
         nodeName = 'RDI_imported';
-        Bp = [1 20];
         STIMcodes = [1,2,3,4,5];
         phaseName = 'Passive';
         %load example expdata to calculate nTrialsPerBlock
         s=whichSubjects(1);
-        load(['L' EDATfolder(2:end) ExpName '_' Subjects{s} '_' sessions{s}(1) '_expdata.mat' ])
+        load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s}(1) '_expdata.mat' ])
         nTrialsPerBlock = expdata.(phaseName).blocks(1).num_trials;
         block_list = expdata.(phaseName).block_list;
         nBlocksPerType = sum(block_list==block_list(1));
 end
+Bp = [1 20];
 low = Bp(1); high = Bp(2);
 %load peaks 
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate],'allGrandcon_times')
@@ -83,15 +118,46 @@ for s=whichSubjects
     if s==whichSubjects(1)
         singleAmps = nan(whichSubjects(end),length(bls),nTrialsPerBlock*nBlocksPerType,2);%subjs x blockTypes x Trials x peaks
         isArtefact = nan(whichSubjects(end),length(bls),nTrialsPerBlock*nBlocksPerType);%subjs x blockTypes x Trials
+        seqInds = nan(whichSubjects(end),length(bls),nTrialsPerBlock*nBlocksPerType);%subjs x blockTypes x Trials
+        stimCodes = nan(whichSubjects(end),length(bls),nTrialsPerBlock*nBlocksPerType);%subjs x blockTypes x Trials
     end
+    ib=0;
     for bl = bls
+        ib=ib+1;
         blockName = blocks{bl};
         disp(blockName)
-        Bcode = Bcodes_names.Bcodes(strcmp(Bcodes_names.Bnames,blockName));
-        EventCodes=cell(1,length(conditions));
-        for i=1:length(conditions)
-            EventCodes{i} = Bcode + STIMcodes(i);
+        %calc codes:
+        switch ExpN
+            case 1
+               switch blockName 
+                    case 'chroma'
+                        EventCodes = {3120,3130,3140,3150,3111};
+                    case 'chromactrl'
+                        EventCodes = {3220,3230,3240,3250,3211};
+                    case 'classic'
+                        EventCodes = {[1320, 3320],[1330, 3330],[1340, 3340],[1350, 3350] ,[1311, 3311]};
+                    case 'classicctrl'
+                        EventCodes = {[1420, 3420],[1430, 3430],[1440, 3440],[1450, 3450],[1411, 3411]};
+               end
+                EventCodes = EventCodes(order);
+            case 2
+        
+                PBcode = codes_names.PBcodes(strcmp(codes_names.names,blockName));
+                EventCodes=cell(1,length(conditions));
+                for i=1:length(conditions)
+                    EventCodes{i} = PBcode + STIMcodes(i);
+                end
+
+            case 3
+                Bcode = Bcodes_names.Bcodes(strcmp(Bcodes_names.Bnames,blockName));
+                EventCodes=cell(1,length(conditions));
+                for i=1:length(conditions)
+                    EventCodes{i} = Bcode + STIMcodes(i);
+                end
+
         end
+
+        
         %
         %assign EventCodes to relevantTrigs
         relevantTrigs = EventCodes;%
@@ -120,14 +186,14 @@ for s=whichSubjects
                 wlen = length(Psamps);
                 if length(idx)*5 ==  nTrialsPerBlock*nBlocksPerType
                 else
-                    warning('number of found triggers is wrong')
+                    warning([Subj ': number of found triggers is wrong'])
                 end
                 if trigs
                     %[AVG, SEGS, REJ] = SegAndAvg(allData(:,:),trigs,win,'reject',artifactsIndexes);
                     wdata = reshape(data(Plocs(:)),[wlen,length(idx)]);
-                    singleAmps(s,bl,idx,ipeak) = mean(wdata);%subjs x blockTypes x Trials x peaks
+                    singleAmps(s,ib,idx,ipeak) = mean(wdata);%subjs x blockTypes x Trials x peaks
                     artFlag = ismember(ERPlocs,artifactsIndexes);
-                    isArtefact(s,bl,idx) = any(artFlag,1);
+                    isArtefact(s,ib,idx) = any(artFlag,1);
                 end
             end
         end    

@@ -17,11 +17,11 @@ whichSubjects = sbjcts(~ismember(sbjcts,[badSubjects,mss]));
 
 mode = [];
 
-drive = 'L:';%network
+drive = 'S:\Lab-Shared';%network
 localDrive = 'D:';
 
 ResultsFolder = [drive '\Experiments\' ExpName '\Experiment\Results\'];
-AnalyzerExportFolder = ['L' ResultsFolder(2:end) 'EEG\export\'];
+AnalyzerExportFolder = ['S:\Lab-Shared' ResultsFolder(14:end) 'EEG\export\'];
 RawDataFolder = [ResultsFolder 'EEG\raw\'];
 AnalysisFolder = [drive '\Experiments\' ExpName '\Analysis\'];
 EDATfolder = [ResultsFolder 'EDAT\'];

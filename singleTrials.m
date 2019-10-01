@@ -1,9 +1,10 @@
 %calc model single trials
-Folder = 'L:\Experiments\N1P2\Analysis\Model\singleTrials';
+Folder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\Model\singleTrials';
 mkdir(Folder)
+addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 %% compute single trials peak amps 
 %no need to run again
-ExpN = 3;
+ExpN = 1;
 Expdir = [Folder filesep 'Exp' num2str(ExpN)];
 mkdir(Expdir)
 
@@ -11,18 +12,25 @@ mkdir(Expdir)
 %Done all in 2520.1113
 
 save([Expdir filesep 'singleAmps'],'singleAmps','isArtefact')
+save([Expdir filesep 'isArtefact'],'isArtefact')
 %% prep model structures
 %no need to run again
 ExpN = 3;
 switch ExpN
     case 1
+        addpath(['S:\Lab-Shared\Experiments\MMNchroma\Analysis'])
+        Definitions_MMNchroma
+        RAdate = '22-May-2019';
     case 2
+        addpath(['S:\Lab-Shared\Experiments\MMNchromaF\Analysis'])
+        RAdate = '20-May-2019';
+        Definitions_MMNchromaF
     case 3
         Definitions_N1P2
+        RAdate = '19-Dec-2018';
 end
 
 %load model - RASigTau
-RAdate = '19-Dec-2018';
 loadFolder = [modelFolder RAdate filesep];
 
 fprintf(['Loading...']);tic
@@ -35,46 +43,90 @@ fprintf(['Done in %4.1f sec \n'], toc)
 
 %Keep only RA of relevant stim:
 relRA = nan(size(RAs_SigTau,1),size(RAs_SigTau,2),size(RAs_SigTau,3),size(RAs_SigTau,5),size(RAs_SigTau,6),size(RAs_SigTau,7));
-Codess = stimCodess - 10*floor(stimCodess/10);
+%convert stimCodess of exp 1 and 2
+switch ExpN
+    case 1
+        Codess = stimCodess - 1000*floor(stimCodess/1000);
+        Codess = Codess - 100*floor(Codess/100);
+        Codess(Codess==20)=1;
+        Codess(Codess==30)=2;
+        Codess(Codess==11)=3;
+        Codess(Codess==40)=4;
+        Codess(Codess==50)=5;        
+    case 2
+        Codess = stimCodess - 1000*floor(stimCodess/1000);
+        Codess = Codess - 100*floor(Codess/100);
+        Codess(Codess==20)=1;
+        Codess(Codess==30)=2;
+        Codess(Codess==11)=3;
+        Codess(Codess==40)=4;
+        Codess(Codess==50)=5;  
+    case 3
+        Codess = stimCodess - 10*floor(stimCodess/10);
+end
 for s=whichSubjects
     for bi = 1:size(RAs_SigTau,2)
         for seq=1:size(RAs_SigTau,3)
             for ti=1:size(RAs_SigTau,5)
-                relRA(s,bi,seq,ti,:,:) = RAs_SigTau(s,bi,seq,Codess(s,bi,seq,ti),ti,:,:);
+                if ~isnan(Codess(s,bi,seq,ti))
+                    relRA(s,bi,seq,ti,:,:) = RAs_SigTau(s,bi,seq,Codess(s,bi,seq,ti),ti,:,:);
+                end
             end
         end
     end
 end
-save([loadFolder 'relRA'],'relRA','-v7.3');clear RAs_SigTau
+save([loadFolder 'relRA'],'relRA','stimCodess','-v7.3');clear RAs_SigTau
 
 %concatenate sequences:
 load([loadFolder 'relRA'])
-RAcat = [];
-for is=1:size(relRA,3)
-    RAcat = cat(4,RAcat,relRA(:,:,is,:,:,:));
+[nsu nb nseq nt nsi nta] = size(relRA);
+RAcat = nan(nsu,nb,nseq*nt,nsi,nta);
+for iseq=1:nseq
+    for su=whichSubjects
+        if any(any(any(any(isnan(relRA(su,:,:,:,1,1))))))
+            nnan=sum(isnan(relRA(su,1,1,:,1,1)));len=nt-nnan;
+            fromind=(iseq-1)*nseq*nt/nseq+1-nnan*(iseq-1); toind=fromind+len-1;
+            RAcat(su,:,fromind:toind,:,:) = relRA(su,:,iseq,1:len,:,:);
+        else
+            fromind=(iseq-1)*nseq*nt/nseq+1; toind=(iseq)*nseq*nt/nseq;
+            RAcat(su,:,fromind:toind,:,:) = relRA(su,:,iseq,:,:,:);
+        end
+    end
 end
-RAcat = squeeze(RAcat);
-clear relRA
-
-%concatenate sequences and stimuli:
-load([loadFolder 'Metadata'])%artIndss, seqIndss, smplss, stimCodess
-seqIndcat = [];stimCodecat = []; smplcat = [];
-for is=1:size(seqIndss,3)
-    seqIndcat = cat(4,seqIndcat,seqIndss(:,:,is,:));
-    stimCodecat = cat(4,stimCodecat,stimCodess(:,:,is,:));
-    smplcat = cat(4,smplcat,smplss(:,:,is,:));    
-end
-seqIndcat = squeeze(seqIndcat);
-stimCodecat = squeeze(stimCodecat);
-smplcat = squeeze(smplcat); 
-
 save([loadFolder 'RAcat'],'RAcat','-v7.3');
-save([loadFolder 'metadatacat'],'seqIndcat','stimCodecat','smplcat')
+
 %reduce size of model :
 itaumax = 25;
 RAcat = RAcat(:,:,:,:,1:itaumax);
 taus = taus(1:itaumax);
 save([loadFolder 'RAcat_reduced'],'RAcat','taus','-v7.3')
+
+%concatenate sequences and stimuli:
+load([loadFolder 'Metadata'])%artIndss, seqIndss, smplss, stimCodess
+[nsu nb nseq nt] = size(seqIndss);
+seqIndcat = nan(nsu,nb,nseq*nt);
+stimCodecat = nan(nsu,nb,nseq*nt);
+smplcat = nan(nsu,nb,nseq*nt);
+for iseq=1:nseq
+    for su=whichSubjects
+        if any(any(any(any(isnan(seqIndss(su,:,:,:))))))
+            nnan=sum(isnan(seqIndss(su,1,1,:)));len=nt-nnan;
+            fromind=(iseq-1)*nseq*nt/nseq+1-nnan*(iseq-1); toind=fromind+len-1;
+            seqIndcat(su,:,fromind:toind) = seqIndss(su,:,iseq,1:len);
+            stimCodecat(su,:,fromind:toind) = stimCodess(su,:,iseq,1:len);
+            smplcat(su,:,fromind:toind) = smplss(su,:,iseq,1:len);
+        
+        else
+            fromind=(iseq-1)*nseq*nt/nseq+1; toind=(iseq)*nseq*nt/nseq;
+            seqIndcat(su,:,fromind:toind) = seqIndss(su,:,iseq,:);
+            stimCodecat(su,:,fromind:toind) = stimCodess(su,:,iseq,:);
+            smplcat(su,:,fromind:toind) = smplss(su,:,iseq,:);
+        end
+    end
+end
+
+save([loadFolder 'metadatacat'],'seqIndcat','stimCodecat','smplcat')
+
 %% compare data and model
 ExpN = 3;
 Expdir = [Folder filesep 'Exp' num2str(ExpN)];
@@ -179,31 +231,40 @@ for ipeak = 1:length(whichpeaks)
     end
 end
 %% calc significance, permutations
-num_permutations = 1000;
+num_permutations = 250;
 
 ExpN = 3;
 Expdir = [Folder filesep 'Exp' num2str(ExpN)];
 RAdate = '19-Dec-2018';
 tic
-plotFlag = true;
-compareEstimates( ExpN, Folder, RAdate, num_permutations, plotFlag )
+plotFlag = false;
+[bestauss, bestsigmass ] = compareEstimates( ExpN, Folder, RAdate, num_permutations, plotFlag );
 disp(['Done in ' num2str(toc) ' sec.'])
-
+save([Folder filesep 'permuteN1P2'],'bestauss','bestsigmass')
 %% prep structures for Eli:
 ExpN = 3;
 
 %load data single trials
-Expdir = [Folder filesep 'Exp' num2str(ExpN)];
+Expdir = [Folder filesep 'Exp' num2str(ExpN) filesep];
 load([Expdir filesep 'singleAmps'])
+load([Expdir filesep 'isArtefact'])
+
 %singleAmps
 %isArtefact
 
-RAdate = '19-Dec-2018';
 switch ExpN
     case 1
+        addpath(['S:\Lab-Shared\Experiments\MMNchroma\Analysis'])
+        Definitions_MMNchroma
+        RAdate = '22-May-2019';
     case 2
+        addpath(['S:\Lab-Shared\Experiments\MMNchromaF\Analysis'])
+        RAdate = '20-May-2019';
+        Definitions_MMNchromaF
     case 3
+        addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
         Definitions_N1P2
+        RAdate = '19-Dec-2018';
         nBlockTypes = 5;
         PhaseName = 'Passive';
 end
@@ -216,7 +277,8 @@ fprintf(['Loading...']);tic
 load([loadFolder 'RAcat_reduced'])
 fprintf(['Done in %4.1f sec \n'], toc)
 
-EliFolder = [modelFolder 'Eli' filesep];
+%EliFolder = ['S:\Lab-Shared\Experiments\N1P2\Analysis\Model\Eli' filesep 'Exp' num2str(ExpN) filesep];
+EliFolder = Expdir;
 mkdir(EliFolder);
 save([EliFolder 'taus'],'taus')
 save([EliFolder 'sigmas'],'sigmas')
@@ -227,25 +289,25 @@ RA = RAcat;
 save([EliFolder 'RA'],'RA')
 save([EliFolder 'whichSubjects'],'whichSubjects')
 save([EliFolder 'stimCodecat'],'stimCodecat')
+if 0
+    % prep freqs: block types x tone for the frequencies used in the experiment
+    % prep MIDIs:
+    addpath('S:\Lab-Shared\Z backup\Tamar\fromZ\Documents\MATLAB\MatlabFunctions\mine')
+    s=8;
+    FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
+    load(['L' EDATfolder(2:end) FileName '_expdata.mat' ])
+    MIDIs = nan(nBlockTypes,5);
+    for ibt = 1:nBlockTypes
+         m = expdata.(phaseName).blocks(ibt).MIDIs;%MIDIs of all stimuli
+         for im=1:length(m)
+            MIDIs(ibt,im) = m{im};
+         end
+    end
+    freqs = MIDI2freq(MIDIs);
 
-% prep freqs: block types x tone for the frequencies used in the experiment
-% prep MIDIs:
-addpath('L:\Z backup\Tamar\fromZ\Documents\MATLAB\MatlabFunctions\mine')
-s=2;
-FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
-load(['L' EDATfolder(2:end) FileName '_expdata.mat' ])
-MIDIs = nan(nBlockTypes,5);
-for ibt = 1:nBlockTypes
-     m = expdata.(phaseName).blocks(ibt).MIDIs;%MIDIs of all stimuli
-     for im=1:length(m)
-        MIDIs(ibt,im) = m{im};
-     end
+    save([EliFolder 'MIDIs'],'MIDIs')
+    save([EliFolder 'freqs'],'freqs')
 end
-freqs = MIDI2freq(MIDIs);
-
-save([EliFolder 'MIDIs'],'MIDIs')
-save([EliFolder 'freqs'],'freqs')
-
 %% single subjects
     %% compare data and model
 ExpN = 3;
