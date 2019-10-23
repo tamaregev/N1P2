@@ -83,6 +83,8 @@ for ibt = 1:nBlockTypes
     end
 end
 
+%try 
+
 function tuning = tuningCurve(Mi,Mj,sigma)
     tuning = exp(-0.5*(((Mi-Mj)/sigma).^2));
 
