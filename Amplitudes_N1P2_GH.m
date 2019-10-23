@@ -1,6 +1,5 @@
 %Amplitudes_N1P2
 % March 15, Tamar - adapting from MixedModelF.m
-
 %% definitions
 Definitions_N1P2
 
@@ -15,8 +14,8 @@ Bnames = {'1','2a','2b','3a','3b'}';
 Bcodes = [10,20,30,40,50]';
 Bcodes_names = table(Bnames,Bcodes);
 blocks = Bnames;
-
-%% peak detection - new 3
+%% peak detection 
+% originally termed - new 3
 % find peaks of the grand cond ERP, average voltage of prevcons accordingly
 matrixdate = '29-Oct-2018';
 if 1 %params
@@ -61,9 +60,6 @@ end
 disp(['saving ' mixedFolder 'N1P2_' electrodeName '_' addtag date ' ...'] )
 save([mixedFolder 'N1P2_' electrodeName '_' addtag date],'allPeak_smpls','allPeak_amps','allPeak_times','allGrandcon_as_median','allGrandcon_amps','allGrandcon_times','t','dt','mode','blocks','bls','matrixdate','bslwin','pwins','electrodeName')
 disp('done')
-
-%% peak detection - individual trials
-
 %% check that N1 is before P2
 if 1 %params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
@@ -85,7 +81,6 @@ for bl=1:length(allGrandcon_times)
         disp(['Problem with s ' num2str(s) ', cond ' num2str(c)])
     end
 end
-
 %% compare grandcond peaks and mean prevcons
 if 1 %params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
@@ -201,7 +196,6 @@ for ipeak = 1:2
     legend({'tone 1','tone 2','tone 3','tone 4','tone 5'},'Location','northeastoutside')
     ylabel(['mean amplitude ± CI 5-95%, \muV'])
 end
-
 %% boxplot
 %depends on previous
 pos = zeros(1,25);
@@ -319,7 +313,6 @@ for ipeak = 1
     suptitle([whichpeaks{ipeak} ' of all conditions. Exp: ''' ExpName '''.  N=' num2str(length(includeSubjects))])
 
 end
-
 %% plot bargraph P2 prevcond
 if 1%params
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP'
@@ -378,7 +371,6 @@ for ipeak = 1:2
 
     end
 end
-
 %% prepare table ... and save
 
 peakdate = '30-Oct-2018';
@@ -459,7 +451,6 @@ for ii=1:length(whichpeaks)
     % save tables:
     save([mixedFolder 'LMEtables_' whichpeak '_' date ], 'allTables')
 end
-
 %% load tables and merge:
 savedate = '31-Oct-2018';
 whichpeaks = {'N1','P2'};
@@ -488,9 +479,7 @@ load([mixedFolder 'LMEtables_combined_' savedate ], 'allTables')
 blocks = {'b1','b2a','b2b','b3a','b3b'};
 formulas = {'N1~dist_mean+size_jump+currMIDI+(1|subject)','N1~dist_mean+currMIDI+(1|subject)','N1~dist_mean+(1|subject)',...
             'P2~dist_mean+size_jump+currMIDI+(1|subject)','P2~dist_mean+currMIDI+(1|subject)','P2~size_jump+(1|subject)'};
-
 lmes = cell(length(blocks),length(formulas));
-
 if include
     allSubjects = 1:length(Subjects);
     includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
@@ -507,7 +496,6 @@ mss=[5 14];
     allSubjects = 1:length(Subjects);
     includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
 end
-
 for ib=[1,2,3,4,5]
     allTables.(blocks{ib}) = allTables.(blocks{ib})(ismember(allTables.(blocks{ib}).subject,includeSubjects),:);
     for i=1:length(formulas)
