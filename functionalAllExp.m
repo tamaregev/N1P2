@@ -6,7 +6,7 @@ Definitions_MMNchroma;
 grandFolder = [AnalysisFolder 'grandAverage\'];
 mixedFolder = [AnalysisFolder 'MixedModel\'];
 blocks = {'chroma','chromactrl','classic','classicctrl'};
-bls=[2,4];
+bls = [2,4];
 %% plot functional
 %savedate = '04-Jan-2017';%'Fz'
 if 1 %params
