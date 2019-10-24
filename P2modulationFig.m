@@ -7,8 +7,11 @@ colors = {[0.3 0.745 0.93],[0.75 0 0.75],[1 0 0],[0.75 0 0.75],[0.3 0.745 0.93]}
 linewidths = [2,2,2,2,2];
 linestyles = {'-.','-.','-','-','-'};
 fromx=-100;tox=300;fromy=-2.5;toy=3.2;
+NPallexp_peak_means=cell(2,3);
 %% Experiment 1
+ExpN=1;
 cd('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
+addpath('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
 Definitions_MMNchroma;%new idea for the first time! move definitions into a separate script!
 %%   P2 Bargraphs
 % plot bargraph P2 prevcond
@@ -23,6 +26,9 @@ end
 %load peaks
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 nCond = size(allGrandcon_times{1},2);
+nPrevCond = size(allPeak_amps{1},3);
+
+bls = [2, 4];
 for ipeak = 1:2 
     %1:length(whichpeaks)
     %exclude subjects for which grandcon peak was calculated as median
@@ -38,25 +44,31 @@ for ipeak = 1:2
         mss = unique(mss);
         includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
     end
-    peak_means = nan(length(bls),nCond);
-    peak_errs = nan(length(bls),nCond);
+    nsub = length(includeSubjects);
+    peaks = nan(nsub,length(bls),nCond,nPrevCond);
+    peak_means = nan(length(bls),nCond,nCond);
+    peak_errs = nan(length(bls),nCond,nCond);
     h=ERPfigure;
     set(h,'Position',[10 100 400 500])
-    bls = [2, 4]; 
+     
         
     for bl= bls  
         %bls
         ib=find(bls==bl);
         for con = 1:size(allPeak_amps{1},2)
             for prevcon = 1:size(allPeak_amps{1},3)
-                peaks = allPeak_amps{bl}(includeSubjects,con,prevcon,ipeak);
-                peak_means(ib,con,prevcon) = nanmean(peaks,1);
-                CI = Confidence(peaks);
-                peak_errs(ib,con,prevcon) = abs(nanmean(peaks)-CI(1));
+                peaks(:,ib,con,prevcon) = allPeak_amps{bl}(includeSubjects,con,prevcon,ipeak);
+                peak_means(ib,con,prevcon) = nanmean(peaks(:,ib,con,prevcon),1);
+                CI = Confidence(peaks(:,ib,con,prevcon));
+                peak_errs(ib,con,prevcon) = abs(nanmean(peaks(:,ib,con,prevcon))-CI(1));
             end
         end
-        peak_means = peak_means(:,order,order);
-        peak_errs = peak_errs(:,order,order);
+        peak_means(ib,:,:) = peak_means(ib,order,order);
+        peak_errs(ib,:,:) = peak_errs(ib,order,order);
+        
+%         peak_means = peak_means(:,order,order);
+%         peak_meanz = peak_meanz(:,order,order);
+%         peak_errs = peak_errs(:,order,order);
   
         for i=1:size(allPeak_amps{1},2)
            
@@ -72,11 +84,34 @@ for ipeak = 1:2
         %suptitle([whichpeaks{ipeak} '. Electrode: ' electrodeName '. Block: ' num2str(bl)])
     
     end
-    
+%     
 FigName = 'Exp1P2bars';
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
+%save for all exp together:
+S = size(peaks);
+pp=peaks(:);
+if ipeak==1
+    
+    peakz = reshape(zscore(-1*pp(~isnan(pp))),size(peaks));
+else
+    peakz = reshape(zscore(peaks(:)),size(peaks));
 end
+ib=0;
+for bl= bls
+    ib=ib+1;
+    %bls
+    for con = 1:size(allPeak_amps{1},2)
+        for prevcon = 1:size(allPeak_amps{1},3)
+            peak_meanz(ib,con,prevcon) = nanmean(peakz(:,ib,con,prevcon),1);
+        end
+    end
+end
+NPallexp_peak_means{ipeak,ExpN}=peak_means; 
+NPallexp_peak_meanz{ipeak,ExpN}=peak_meanz; 
+
+end
+
 %%     cond ERPs
 bls = [2];
 tones = [2];
@@ -168,7 +203,9 @@ for ib=bls
 end
 
 %% Experiment 2
+ExpN=2;
 cd('S:\Lab-Shared\Experiments\MMNchromaF\Analysis')
+addpath('S:\Lab-Shared\Experiments\MMNchromaF\Analysis')
 Definitions_MMNchromaF;
 addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 %%   P2 Bargraphs
@@ -185,6 +222,7 @@ end
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 bls=2;
 nCond = size(allGrandcon_times{1},2);
+nPrevCond = size(allPeak_amps{1},3);
 
 % p2 bars
 nCond = size(allGrandcon_times{1},2);
@@ -206,8 +244,10 @@ for ipeak = 1:2
         allSubjects = 1:33;
         includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
     end
-    peak_means = nan(length(bls),nCond);
-    peak_errs = nan(length(bls),nCond);
+    nsub = length(includeSubjects);
+    peaks = nan(nsub,length(bls),nCond,nPrevCond);
+    peak_means = nan(length(bls),nCond,nPrevCond);
+    peak_errs = nan(length(bls),nCond,nPrevCond);
     h=ERPfigure;
     set(h,'Position',[10 100 200 500])
     bls = [2]; 
@@ -217,14 +257,19 @@ for ipeak = 1:2
         ib=find(bls==bl);
         for con = 1:size(allPeak_amps{1},2)
             for prevcon = 1:size(allPeak_amps{1},3)
-                peaks = allPeak_amps{bl}(includeSubjects,con,prevcon,ipeak);
-                peak_means(ib,con,prevcon) = nanmean(peaks,1);
-                CI = Confidence(peaks);
-                peak_errs(ib,con,prevcon) = abs(nanmean(peaks)-CI(1));
+                peaks(:,ib,con,prevcon) = allPeak_amps{bl}(includeSubjects,con,prevcon,ipeak);
+                peak_means(ib,con,prevcon) = nanmean(peaks(:,ib,con,prevcon),1);
+                CI = Confidence(peaks(:,ib,con,prevcon));
+                peak_errs(ib,con,prevcon) = abs(nanmean(peaks(:,ib,con,prevcon))-CI(1));
             end
         end
-        peak_means = peak_means(:,order,order);
-        peak_errs = peak_errs(:,order,order);
+%         peak_means = peak_means(:,order,order);
+%         peak_meanz = peak_meanz(:,order,order);
+%         peak_errs = peak_errs(:,order,order);
+
+        peak_means(ib,:,:) = peak_means(ib,order,order);
+        peak_meanz(ib,:,:) = peak_meanz(ib,order,order);
+        peak_errs(ib,:,:) = peak_errs(ib,order,order);
   
         for i=1:size(allPeak_amps{1},2)
            
@@ -236,13 +281,30 @@ for ipeak = 1:2
                 ylabel(['tone ' num2str(i)])
             end
         end
-       
         %suptitle([whichpeaks{ipeak} '. Electrode: ' electrodeName '. Block: ' num2str(bl)])
-    
     end
     FigName = ['Exp2P2bars_' whichpeaks{ipeak}];
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
+%save for all exp together:
+if ipeak==1
+    peakz = reshape(zscore(-1*peaks(:)),size(peaks));
+else
+    peakz = reshape(zscore(peaks(:)),size(peaks));
+end
+ib=0;
+for bl= bls
+    ib=ib+1;
+    %bls
+    for con = 1:size(allPeak_amps{1},2)
+        for prevcon = 1:size(allPeak_amps{1},3)
+            peak_meanz(ib,con,prevcon) = nanmean(peakz(:,ib,con,prevcon),1);
+        end
+    end
+end
+
+NPallexp_peak_means{ipeak,ExpN}=peak_means; 
+NPallexp_peak_meanz{ipeak,ExpN}=peak_meanz; 
 
 end
 %%     cond ERPs
@@ -350,6 +412,7 @@ for ib=bls
 end
 
 %% Experiment 3
+ExpN=3;
 cd('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 Definitions_N1P2
 cd(GHfolder)
@@ -364,6 +427,8 @@ end
 %load peaks
 load([mixedFolder 'N1P2_' electrodeName '_' addtag peakdate])
 nCond = size(allGrandcon_times{1},2);
+nPrevCond = size(allPeak_amps{1},3);
+
  h=ERPfigure;
 set(h,'Position',[10 100 1000 500])
     
@@ -377,30 +442,26 @@ for ipeak = 1:2
         allSubjects = 1:length(Subjects);
         includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
     else
-%         mss = [];
-%         for bl=1:length(allGrandcon_as_median)
-%             allGrandcon_as_median{bl}(:,:,ipeak);
-%             [r, c]=find(allGrandcon_as_median{bl}(:,:,ipeak));
-%             mss = [mss, r'];
-%         end
-%         mss = unique(mss);
         mss=[5,14];
         allSubjects = 1:length(Subjects);
         includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
     end
+    nsub = length(includeSubjects);
+    peaks = nan(nsub,length(bls),nCond,nPrevCond);
     peak_means = nan(length(blocks),nCond);
     peak_errs = nan(length(blocks),nCond);
+   
     for bl= bls
         %bls
         for con = 1:size(allPeak_amps{1},2)
             for prevcon = 1:size(allPeak_amps{1},3)
-                peaks = allPeak_amps{bl}(includeSubjects,con,prevcon,ipeak);
-                peak_means(bl,con,prevcon) = nanmean(peaks,1);
-                CI = Confidence(peaks);
-                peak_errs(bl,con,prevcon) = abs(nanmean(peaks)-CI(1));
+                peaks(:,bl,con,prevcon) = allPeak_amps{bl}(includeSubjects,con,prevcon,ipeak);
+                peak_means(bl,con,prevcon) = nanmean(peaks(:,bl,con,prevcon),1);
+                CI = Confidence(peaks(:,bl,con,prevcon));
+                peak_errs(bl,con,prevcon) = abs(nanmean(peaks(:,bl,con,prevcon))-CI(1));
             end
         end
-    
+        
         for i=1:size(allPeak_amps{1},2)
             subplot(size(allPeak_amps{1},2),length(bls),(5-i)*length(bls)+bl)
 
@@ -419,10 +480,30 @@ for ipeak = 1:2
 %         saveas(gcf,['S:\Lab-Shared\Experiments\N1P2\Analysis\Figures\Geffen figures\prevcond_b' num2str(bl) '_' whichpeaks{ipeak} '.jpg'])
 
     end
+
 FigName = ['Exp3P2bars_' whichpeaks{ipeak}];
-% saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
-% saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')    
+ saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
+ saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')  
+%save for all exp together:
+S = size(peaks);
+if ipeak==1
+    peakz = reshape(zscore(-1*peaks(:)),size(peaks));
+else
+    peakz = reshape(zscore(peaks(:)),size(peaks));
 end
+for bl= bls
+    %bls
+    for con = 1:size(allPeak_amps{1},2)
+        for prevcon = 1:size(allPeak_amps{1},3)
+            peak_meanz(ib,con,prevcon) = nanmean(peakz(bl,con,prevcon),1);
+        end
+    end
+end
+NPallexp_peak_means{ipeak,ExpN}=peak_means;
+NPallexp_peak_meanz{ipeak,ExpN}=peak_meanz; 
+    
+end
+
 saveas(gcf,[FigFolder filesep FigName '_N1P2'],'fig')
  saveas(gcf,[FigFolder filesep FigName '_N1P2'],'pdf')    
 %%     cond ERPs
@@ -525,7 +606,7 @@ for ib=bls
 
 end
 
-%% All experiments together
+%% All experiments together - prep big table
 % One BIG model!!
 include = false;%include subjects for which time of grandcon peak was determined due to median
 %Experiment 1
@@ -628,8 +709,8 @@ for ie=2:3
 end
 theTableNoP = theTable(:,[1:7,11:13]);
 theTableP = theTable(:,8:9);
-Voltage = zscore(abs(theTableP.N1));N1V = table(Voltage);
-Voltage = zscore(abs(theTableP.P2));P2V = table(Voltage);
+Voltage = zscore(-1*theTableP.N1);N1V = table(Voltage);
+Voltage = zscore(theTableP.P2);P2V = table(Voltage);
 Ns = cell(size(theTable,1),1);for i=1:length(Ns),Ns{i,1} = 'N1';end
 Ps = cell(size(theTable,1),1);for i=1:length(Ps),Ps{i,1} = 'P2';end
 Potential = categorical([Ns;Ps]);
@@ -679,4 +760,85 @@ for fi=1:length(formulas)
     end
 end
 
+%% P2 figure - all exp together!
+%organize per blocks:
 
+NPall = cell(2,1);
+
+for ipeak=1:2
+    NPall{ipeak} = nan(8,5,5);
+    ibl=0;
+    for iexp=1:3
+        ibl=ibl+1;
+        for ibe=1:size(NPallexp_peak_means{ipeak,iexp},1)
+            NPall{ipeak}(ibl,:,:) = NPallexp_peak_meanz{ipeak,iexp}(ibe,:,:);
+        end
+    end
+end
+meanmean=cell(2,1);
+for ipeak=1:2
+    meanmean{ipeak} = nan(5,5);
+    for ic=1:5
+        for ipc=1:5
+            meanmean{ipeak}(ic,ipc) = nanmean(NPall{ipeak}(:,ic,ipc));
+        end
+    end
+end   
+
+%transformation matrix:
+transM = [0 1 2 3 4; ...
+          1 0 1 2 3;...
+          2 1 0 1 2;...
+          3 2 1 0 1;...
+          4 3 2 1 0];
+Nneighbors = cell(2,4);%ipeak, N neighbors
+for ipeak=1:2
+    for i=1:4
+       Nneighbors{ipeak,i}=[]; 
+    end
+    for ic=1:5
+        for ipc=1:5
+            if ic==ipc
+            else
+                Nneighbors{ipeak,transM(ic,ipc)} = [Nneighbors{ipeak,transM(ic,ipc)}, meanmean{ipeak}(ic,ipc)];
+            end
+        end
+    end
+end
+%add nans to complete 8
+for ipeak=1:2
+    for in=1:4
+        len=length(Nneighbors{ipeak,in});
+        if len<8
+            for add = (len+1):8
+                Nneighbors{ipeak,in} = [Nneighbors{ipeak,in}, nan];
+            end
+        end
+    end
+end
+%boxplots:
+ERPfigure
+subplot 211
+boxplot([Nneighbors{1,1}',Nneighbors{1,2}',Nneighbors{1,3}'])
+%ylim([-3 0])
+subplot 212
+boxplot([Nneighbors{2,1}',Nneighbors{2,2}',Nneighbors{2,3}'])
+%ylim([0 3])
+%P2 bargraph
+for ipeak= 1:2
+     h=ERPfigure;
+    set(h,'Position',[10 100 200 500])
+    
+    data=meanmean{ipeak};
+    %bls
+    for ic=1:5
+        subplot(5,1,ic)
+
+        bar(data(ic,:),'FaceColor',colors{ic})
+        %ylim([-4 4])
+  %     barwitherr(squeeze(peak_means(bl,i,:)),squeeze(peak_errs(bl,i,:)),'FaceColor',Colors{i})
+        hold all
+        ylabel(['tone ' num2str(i)])
+        
+    end 
+end
