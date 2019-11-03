@@ -14,6 +14,7 @@ longSubjects = [11, 12, 17, 35];%1/2 infinite artifacts - bug in read_markers_ar
 sbjcts = 1:37;
 mss = [5,14];%couldn't find a peak
 whichSubjects = sbjcts(~ismember(sbjcts,[badSubjects,mss]));
+includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
 
 mode = [];
 

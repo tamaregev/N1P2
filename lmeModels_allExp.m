@@ -146,6 +146,7 @@ end
 %% Section 4: generate and plot the ll maps relative to extremum
 %whichExp = 'all';%can be 1 2 3 or 'all'
 whichExp = 'all';%can be 1 2 3 or 'all'
+ca=[0 100];
 modelName = 'lme';
 dataFolder = [Folder filesep 'allExp' filesep];
 cd(dataFolder)
@@ -183,7 +184,7 @@ saveas(gcf,['Exp ' num2str(whichExp) '_LLR'],'pdf')
 
 % one colorscale for all
 for ipeak=1:2
-    caxis(hsp{ipeak},[0 100])
+    caxis(hsp{ipeak},ca)
 end
 saveas(gcf,['Exp ' num2str(whichExp) '_LLR_caxis'],'png')
 saveas(gcf,['Exp ' num2str(whichExp) '_LLR_caxis'],'pdf')
