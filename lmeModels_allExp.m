@@ -81,10 +81,13 @@ save taus taus
 save sigmas sigmas
 save([dataFolder filesep 'bRA'],'bRA','-v7.3')
 save bwhichSubjects bwhichSubjects
-%% Section 2: If dataTable exists already, can start here
+%% Section 2: If dataTable exists already, start here
 Folder = ['S:\Lab-Shared\Experiments\N1P2\Analysis\Model\singleTrials'];
  [ dataFolder, bT, bRA, bwhichSubjects, taus, sigmas, whichpeaks ] = loadVarslmes( Folder );
-%% Section 3: Calculate the lme model for all taus and sigmas - N1 and P2
+%general Definitions
+models ={'lme','lm'};
+
+ %% Section 3: Calculate the lme model for all taus and sigmas - N1 and P2
 
 %whichExp = 'all';%can be 1 2 3 or 'all'
 whichExp=3;
@@ -264,16 +267,20 @@ end
 clf
 insetlims=[-1123826 -1123810;...
            -1123467 -1123447];
+xlims=[-1123835 -1123550;...
+       -1123475 -1123205];
 for ipeak =1:2
     subplot(2,1,ipeak)
-    histogram(llmins(2:251,ipeak))
+    %histogram(llmins(2:251,ipeak))
     hold on
     histogram(llmaxs(2:251,ipeak))
     plot([llmins(1,ipeak) llmins(1,ipeak)],[0 160],'g','linewidth',3)
     plot([llmaxs(1,ipeak) llmaxs(1,ipeak)],[0 160],'r','linewidth',3)
-    ylim([0 160])
+    ylim([0 75])
     if insetflag
         xlim(insetlims(ipeak,:))
+    else
+        xlim(xlims(ipeak,:))
     end
     title(whichpeaks{ipeak})
     
@@ -1164,11 +1171,23 @@ for ip=1:size(bestsigmasboot,1)
             tmp.bestsig=bestsigmasboot(ip,ispread,ipeak);
             tmp.cond=categorical(ispread);
             tmp.spreads=meanfreqspreads(ispread);
+            switch ipeak
+                case 1
+                    tmp.isN1 = 1;
+                    tmp.isP2 = 0;
+                case 2
+                    tmp.isN1 = 0;
+                    tmp.isP2 = 1;
+            end
             T=[T; struct2table(tmp)];
         end
     end
 end
-formula1='bestsig~spreads+(spreads|bootN)';
+formula = 'bestsig ~ isN1 + isP2 -1 + spreads:isN1 + spreads:isP2 + ((spreads:isN1 + spreads:isP2)|bootN)';
+lme=fitlme(T,formula);
+[p f df1 df2]=coefTest(lme,[1 -1 0 0]);d=sqrt(f)/sqrt(df2);disp(p);disp(d)
+
+formula1='bestsig ~ spreads+(spreads|bootN)';
 lme1=fitlme(T,formula1);
 anova(lme1)
 formula2='bestsig~spreads*Cpot+(spreads|bootN)+(Cpot|bootN)';
