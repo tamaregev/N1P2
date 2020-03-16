@@ -485,8 +485,7 @@ for ip=1:size(ll,1)
         saveas(gcf,'llrlme_zscore_chi95percent','png')
     end
 end
-
-%plot results
+        %% plot results
 ERPfigure;
 pvals=nan(size(dll));
 for ipeak = 1:length(whichpeaks)
@@ -502,19 +501,22 @@ for ipeak = 1:length(whichpeaks)
 
     subplot(2,2,ipeak+2)
     
-    for ip=1:length(dll)
-        data=dll(ipeak,1:ip);
+    for ip=2:length(dll)%ip is nperms + 1
+        data=nan(1,ip);data(1)=dll(ipeak,1);
+        ni=randperm(length(dll)-1)+1;
+        data(2:end)=dll(ipeak,ni(1:(ip-1)));
         ii=sum(data>=data(1));
         pvals(ipeak,ip) = ii/length(data);
     end
-    plot(pvals(ipeak,:));
+    semilogy(pvals(ipeak,:),'linewidth',3);
     hold on
-    plot([1 length(dll)],[pvals(ipeak,end) pvals(ipeak,end)],'Color',[0 1 0],'linewidth',1)
+    semilogy([1 length(dll)],[pvals(ipeak,end) pvals(ipeak,end)],'Color',[0 1 0],'linewidth',3)
     text(length(dll),pvals(ipeak,end),num2str(pvals(ipeak,end)),'fontsize',14)    
     xlabel('Number of permutations')
     ylabel('P-value')
     set(gca,'fontsize',14)
-    ylim([0 0.5])
+    ylim([10^-3 1])
+    xlim([0 250])
 end
 saveas(gcf,'permutation_results','pdf')
 %% Section 7a: fit individual subjects
@@ -1160,44 +1162,55 @@ saveas(gcf,[saveFolder 'bestsigmas_booterrors'],'png')
 %% anova of lme for the bootstrap
 %create table
 T=table;
-for ip=1:size(bestsigmasboot,1)
+for ip=1:size(bestsigmasboot,1)+1
     for ispread=1:size(bestsigmasboot,2)
         for ipeak=1:size(bestsigmasboot,3)
-            tmp=struct;
-            tmp.pot=ipeak;
-            tmp.Cpot=categorical(ipeak);
-            tmp.bootN=ip;
-            tmp.CbootN=categorical(ip);
-            tmp.bestsig=bestsigmasboot(ip,ispread,ipeak);
-            tmp.cond=categorical(ispread);
-            tmp.spreads=meanfreqspreads(ispread);
-            switch ipeak
-                case 1
-                    tmp.isN1 = 1;
-                    tmp.isP2 = 0;
-                case 2
-                    tmp.isN1 = 0;
-                    tmp.isP2 = 1;
+                tmp=struct;
+                tmp.pot=ipeak;
+                tmp.Cpot=categorical(ipeak);
+                tmp.bootN=ip;
+                tmp.CbootN=categorical(ip);
+                tmp.cond=categorical(ispread);
+                tmp.spreads=meanfreqspreads(ispread);
+                tmp.range=tmp.spreads*4;
+               switch ipeak
+                    case 1
+                        tmp.isN1 = 1;
+                        tmp.isP2 = 0;
+                    case 2
+                        tmp.isN1 = 0;
+                        tmp.isP2 = 1;
+               end
+            if ip<=size(bestsigmasboot,1)
+                tmp.bestsig=bestsigmasboot(ip,ispread,ipeak);
+               % disp([num2str(ip) ' small'])
+            else
+                %disp([num2str(ip) ' large'])
+                tmp.bestsig=squeeze(bestParams(ispread,ipeak,1));
             end
+            
             T=[T; struct2table(tmp)];
+           
         end
     end
 end
-formula = 'bestsig ~ isN1 + isP2 -1 + spreads:isN1 + spreads:isP2 + ((spreads:isN1 + spreads:isP2)|bootN)';
+formula = 'bestsig ~ isN1-1 + isP2-1 + spreads:isN1 + spreads:isP2 + (isN1-1|bootN) + (isP2-1|bootN) + (range:isN1-1|bootN) + (range:isP2-1|bootN)';
 lme=fitlme(T,formula);
-[p f df1 df2]=coefTest(lme,[1 -1 0 0]);d=sqrt(f)/sqrt(df2);disp(p);disp(d)
+for i=1:length(lme.CoefficientNames)
+    disp(lme.CoefficientNames{i})
+    d=lme.Coefficients.tStat(i)/sqrt(99);
+%     d=lme.Coefficients.tStat(i)/sqrt(100);
+    disp(['Estimate=' num2str(lme.Coefficients.Estimate(i)) ', SE=' num2str(lme.Coefficients.SE(i)) ', d=' num2str(d) ', p=' num2str(lme.Coefficients.pValue(i))])
+    disp('')
+end
 
-formula1='bestsig ~ spreads+(spreads|bootN)';
-lme1=fitlme(T,formula1);
-anova(lme1)
-formula2='bestsig~spreads*Cpot+(spreads|bootN)+(Cpot|bootN)';
-lme2=fitlme(T,formula2);
-anova(lme2)
-compare(lme1,lme2)
-T1=T(T.pot==1,:);
-T2=T(T.pot==2,:);
-lmeN1=fitlme(T1,formula1);
-lmeP2=fitlme(T2,formula1);
+disp('comparing intercepts')
+[p f df1 df2]=coefTest(lme,[1 -1 0 0]);d=sqrt(f)/sqrt(99);
+disp(['F(' num2str(df1) ',' num2str(df2) ')=' num2str(f) ', d=' num2str(d) ', p=' num2str(p)])
+disp('comparing spreads')
+[p f df1 df2]=coefTest(lme,[0 0 1 -1]);d=sqrt(f)/sqrt(99);
+disp(['F(' num2str(df1) ',' num2str(df2) ')=' num2str(f) ', d=' num2str(d) ', p=' num2str(p)])
+
 %% scramble labels within spreads
 Folder = ['S:\Lab-Shared\Experiments\N1P2\Analysis\Model\singleTrials'];
  [ dataFolder, bT, bRA, bwhichSubjects, taus, sigmas, whichpeaks ] = loadVarslmes( Folder );
@@ -1278,6 +1291,10 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
     save([saveFolder 'bestParamsScrambled'],'bestParamsScrambled');
     clear bestParams
     %% plot best sigmas real+scrambled
+    
+    colorsnp={[0.9608 0.5098 0.1882],[0.2353 0.7059 0.2941]};
+
+    
     load([saveFolder 'bestParams']);
     load([saveFolder 'bestSigmasBoot'])
     load([saveFolder 'bestParamsScrambled']);
@@ -1294,12 +1311,12 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
     end
     ERPfigure;
     hold on
-    h1=plot(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),'g-.','linewidth',2);
-    h2=plot(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),'m-.','linewidth',2);
-    plot(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),'.g','MarkerSize',30,'HandleVisibility','off')
-    plot(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),'.m','MarkerSize',30,'HandleVisibility','off')
-    errorbar(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),errorbars(:,1),'g:','HandleVisibility','off')
-    errorbar(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),errorbars(:,1),'m:','HandleVisibility','off')
+    h1=plot(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),'m-.','linewidth',2);
+    h2=plot(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),'c-.','linewidth',2);
+    plot(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),'.m','MarkerSize',30,'HandleVisibility','off')
+    plot(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),'.c','MarkerSize',30,'HandleVisibility','off')
+    errorbar(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),errorbars(:,1),'m:','HandleVisibility','off')
+    errorbar(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),errorbars(:,1),'c:','HandleVisibility','off')
     ylim([2 14])
     xlim([2 14])
     plot([2 14],[2 14],'k:')
@@ -1318,12 +1335,12 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
         end
     end
    
-    h3=plot(meanfreqspreads,bestParams(:,1,1),'b','linewidth',2);
-    h4=plot(meanfreqspreads,bestParams(:,2,1),'r','linewidth',2);
-    plot(meanfreqspreads,bestParams(:,1,1),'.b','MarkerSize',50,'HandleVisibility','off')
-    plot(meanfreqspreads,bestParams(:,2,1),'.r','MarkerSize',50,'HandleVisibility','off')
-    errorbar(meanfreqspreads,bestParams(:,1,1),errorbars(:,1),'b','HandleVisibility','off')
-    errorbar(meanfreqspreads,bestParams(:,2,1),errorbars(:,1),'r','HandleVisibility','off')
+    h3=plot(meanfreqspreads,bestParams(:,1,1),'Color',colorsnp{1},'linewidth',2);
+    h4=plot(meanfreqspreads,bestParams(:,2,1),'Color',colorsnp{2},'linewidth',2);
+    plot(meanfreqspreads,bestParams(:,1,1),'.','Color',colorsnp{1},'MarkerSize',50,'HandleVisibility','off')
+    plot(meanfreqspreads,bestParams(:,2,1),'.','Color',colorsnp{2},'MarkerSize',50,'HandleVisibility','off')
+    errorbar(meanfreqspreads,bestParams(:,1,1),errorbars(:,1),'Color',colorsnp{1},'HandleVisibility','off')
+    errorbar(meanfreqspreads,bestParams(:,2,1),errorbars(:,1),'Color',colorsnp{2},'HandleVisibility','off')
     title('\sigma as a function of frequency spread')
     ylabel('Best fit \sigma (semitones)')
     xlabel('Mean spread in the sequence (semitones)')
@@ -1332,4 +1349,155 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
     set(hl,'fontsize',16)
     saveas(gcf,[saveFolder 'bestsigmasSpreads_boot+scrambled'],'png')
     saveas(gcf,[saveFolder 'bestsigmasSpreads_boot+scrambled'],'pdf')
+%% compare real sigma to scrambled sigmas
+saveFolder = [Folder filesep 'spreads' filesep];
+
+load([saveFolder 'bestParams']);
+bestsigmas=bestParams(:,:,1);
+load([saveFolder 'bestSigmasBoot'])
+load([saveFolder 'bestParamsScrambled']);
+colormap=jet(100);
+c=colormap;
+
+figure
+x=meanfreqspreads.*4;
+slopes=nan(size(bestsigmasboot,1)+1,2);
+for ipeak=1:2
+    subplot(1,2,ipeak)
+    hold off
+    y=bestsigmas(:,ipeak)';
+    [p,s]=polyfit(x,y,1);
+    slopes(1,ipeak)=p(1);
+    [y_fit,d]=polyval(p,x,s);
+    hold on
+    plot(x,y-y(1),'o','Color','k');
+    plot(x,y_fit-y_fit(1),'Color','k','linewidth',3);
+        
+    for iboot=1:size(bestParamsScrambled,1)
+        y = bestsigmasboot(iboot,:,ipeak);
+        [p,s]=polyfit(x,y,1);
+        slopes(iboot+1,ipeak)=p(1);
+        [y_fit,d]=polyval(p,x,s);
+        plot(x,y-y(1),'o','Color',c(iboot,:));
+        plot(x,y_fit-y_fit(1),'Color',c(iboot,:));
+    end
+end  
+slopes_boots=slopes;
+ %%
+x=meanfreqspreads.*4;
+clear lme
+for ipeak=1:2
+    disp('')
+    disp(num2str(ipeak))
+    y = bestParamsScrambled(:,:,ipeak,1);
+    T=table;
+    for ii=1:size(y,1)
+        for jj=1:size(y,2)
+            tmp=struct;
+            tmp.range=x(jj);
+            tmp.sigma=y(ii,jj);
+            T=[T; struct2table(tmp)];
+        end
+    end
+    lme{ipeak}=fitlme(T,'sigma~1+range');
+    disp(['Scrambles slope: ' num2str(lme{ipeak}.Coefficients.Estimate(2)) ' CI: ' num2str(lme{ipeak}.Coefficients.Lower(2)) ' ' num2str(lme{ipeak}.Coefficients.Upper(2)) ])
+ 
+    %[H,P,CI,STATS] = ttest((slopes_boots(2:end,ipeak)),mean(slopes_scrambles(2:end,ipeak)));
+    %disp(['boot slope:' num2str(mean(slopes_boots(2:end,ipeak))) ' CI: ' num2str(CI(1)) ' ' num2str(CI(2))])    
     
+end
+% figure
+% x=meanfreqspreads;
+% slopes=nan(size(bestParamsScrambled,1)+1,2);
+% for ipeak=1:2
+%     subplot(1,2,ipeak)
+%     hold off
+%     y=bestsigmas(:,ipeak)';
+%     [p,s]=polyfit(x,y,1);
+%     slopes(1,ipeak)=p(1);
+%     [y_fit,d]=polyval(p,x,s);
+%     hold on
+%     plot(x,y-y(1),'o','Color','k');
+%     plot(x,y_fit-y_fit(1),'Color','k','linewidth',3);
+%         
+%     for iboot=1:size(bestParamsScrambled,1)
+%         y = bestParamsScrambled(iboot,:,ipeak,1);
+%         [p,s]=polyfit(x,y,1);
+%         slopes(iboot+1,ipeak)=p(1);
+%         [y_fit,d]=polyval(p,x,s);
+%         plot(x,y-y(1),'o','Color',c(iboot,:));
+%         plot(x,y_fit-y_fit(1),'Color',c(iboot,:));
+%     end
+% end  
+% slopes_scrambles=slopes;
+
+    %% plot results boot
+    ERPfigure
+    slopes=slopes_boots;
+    compare2 = mean(slopes_scrambles(2:end,ipeak));
+for ipeak=1:2
+    subplot(2,2,ipeak)
+    h{ipeak}=histogram(slopes(2:end,ipeak),20,'normalization','count');
+    hold on
+    plot([compare2 compare2],[0 20],'r','linewidth',2)
+    %cs=cumsum(h{ipeak}.BinCounts)/250;
+    %plot(h{ipeak}.BinEdges(1:end-1),cs)
+    title(whichpeaks{ipeak})
+    set(gca,'fontsize',14)
+    ylim([0 20])
+
+    subplot(2,2,ipeak+2)
+    
+    for ip=2:length(slopes)%ip is nperms + 1
+        data=nan(1,ip);data(1)=compare2;
+        ni=randperm(length(slopes)-1)+1;
+        data(2:end)=slopes(ni(1:(ip-1)),ipeak);
+        ii=sum(data<=data(1));
+        pvals(ipeak,ip) = ii/length(data);
+    end
+    semilogy(pvals(ipeak,:),'linewidth',3);
+    hold on
+    semilogy([1 length(slopes)],[pvals(ipeak,end) pvals(ipeak,end)],'Color',[0 1 0],'linewidth',3)
+    text(length(slopes),pvals(ipeak,end),num2str(pvals(ipeak,end)),'fontsize',14)    
+    xlabel('Number of permutations')
+    ylabel('P-value')
+    set(gca,'fontsize',14)
+    ylim([10^-3 1])
+    xlim([0 101]) 
+end
+
+    %% plot results scrambled
+ERPfigure;
+pvals=nan(size(slopes,1));
+clear h
+for ipeak = 1:length(whichpeaks)
+    subplot(2,2,ipeak)
+    h{ipeak}=histogram(slopes(2:end,ipeak),20,'normalization','count');
+    hold on
+    plot([slopes(1,ipeak) slopes(1,ipeak)],[0 20],'r','linewidth',2)
+    %cs=cumsum(h{ipeak}.BinCounts)/250;
+    %plot(h{ipeak}.BinEdges(1:end-1),cs)
+    title(whichpeaks{ipeak})
+    set(gca,'fontsize',14)
+    ylim([0 20])
+
+    subplot(2,2,ipeak+2)
+    
+    for ip=2:length(slopes)%ip is nperms + 1
+        data=nan(1,ip);data(1)=slopes(1,ipeak);
+        ni=randperm(length(slopes)-1)+1;
+        data(2:end)=slopes(ni(1:(ip-1)),ipeak);
+        ii=sum(data>=data(1));
+        pvals(ipeak,ip) = ii/length(data);
+    end
+    semilogy(pvals(ipeak,:),'linewidth',3);
+    hold on
+    semilogy([1 length(slopes)],[pvals(ipeak,end) pvals(ipeak,end)],'Color',[0 1 0],'linewidth',3)
+    text(length(slopes),pvals(ipeak,end),num2str(pvals(ipeak,end)),'fontsize',14)    
+    xlabel('Number of permutations')
+    ylabel('P-value')
+    set(gca,'fontsize',14)
+    ylim([10^-3 1])
+    xlim([0 101])
+end
+saveas(gcf,[saveFolder 'compare_to_scrambles'],'pdf')

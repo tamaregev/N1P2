@@ -2,6 +2,7 @@
 addpath('S:\Lab-Shared\NewDataArch\CommonResources\Tools\Matlab_Tools')
 FigFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\Figures\PaperFigures\N1modulation';
 MixedFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\MixedModel';
+HandyFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\HandyStructures';
 addpath(FigFolder)
 addpath('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
 addpath('S:\Lab-Shared\Experiments\MMNchromaF\Analysis')
@@ -195,6 +196,9 @@ FigName = 'Exp1bars';
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
 
+%save handy peaks:
+allPeaks=reshape(bpeaks,[size(bpeaks,1),size(bpeaks,2)/length(bls),length(bls)]);
+save([HandyFolder filesep 'Exp' num2str(ExpN) '_' whichpeaks{ipeak}],'allPeaks')
 end
 
 %%      LME model
@@ -396,6 +400,10 @@ for ipeak = 1:2
     %title([whichpeaks{ipeak} ' of all conditions'],'fontsize',16)
     %legend({'tone 1','tone 2','tone 3','tone 4','tone 5'},'Location','northeastoutside')
     %ylabel(['mean amplitude ? CI 5-95%, \muV'])
+    %save handy peaks:
+allPeaks=reshape(bpeaks,[size(bpeaks,1),size(bpeaks,2)/length(bls),length(bls)]);
+save([HandyFolder filesep 'Exp' num2str(ExpN) '_' whichpeaks{ipeak}],'allPeaks')
+
 end
 
 FigName = 'Exp2bars';
@@ -606,6 +614,10 @@ for ipeak = 1:length(whichpeaks)
 FigName = 'Exp3bars';
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
+
+%save handy peaks:
+allPeaks=reshape(bpeaks,[size(bpeaks,1),size(bpeaks,2)/length(bls),length(bls)]);
+save([HandyFolder filesep 'Exp' num2str(ExpN) '_' whichpeaks{ipeak}],'allPeaks')
 
 end
 

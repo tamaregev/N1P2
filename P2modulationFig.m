@@ -66,7 +66,7 @@ for ipeak = 1:2
     
     peak_errs = nan(length(bls),nCond,nCond);
     h=ERPfigure;
-    set(h,'Position',[10 100 400 500])
+    set(h,'Position',[10 100 400 600])
      
         
     for bl= bls  
@@ -78,6 +78,7 @@ for ipeak = 1:2
                 peak_means(ib,con,prevcon) = nanmean(peaks(:,ib,con,prevcon),1);
                 CI = Confidence(peaks(:,ib,con,prevcon));
                 peak_errs(ib,con,prevcon) = abs(nanmean(peaks(:,ib,con,prevcon))-CI(1));
+                %peak_errs(ib,con,prevcon) = nanstd(peaks(:,ib,con,prevcon))/sqrt(size(peaks,1));
             end
         end
         peak_means(ib,:,:) = peak_means(ib,order,order);
@@ -87,10 +88,24 @@ for ipeak = 1:2
            
             subplot(size(allPeak_amps{1},2),length(bls),(5-i)*length(bls)+ib)
             bar(squeeze(peak_means(ib,i,:)),'FaceColor',colors{i})
-      %     barwitherr(squeeze(peak_means(bl,i,:)),squeeze(peak_errs(bl,i,:)),'FaceColor',Colors{i})
+           % pause
+            barwitherr(squeeze(peak_errs(ib,i,:)),squeeze(peak_means(ib,i,:)),'FaceColor',colors{i})
             hold all
             if ib==1
-                ylabel(['tone ' num2str(i)])
+               % ylabel(['tone ' num2str(i)])
+               
+            end
+            if ib~=1 || i~=1
+                set(gca,'xticklabels',{})
+                set(gca,'yticklabels',{})
+            end
+            set(gca,'fontsize',16)
+            if ipeak==1
+                axis([0 6 -3.5 0])
+                %xlim([0 6])
+            elseif ipeak==2
+                %xlim([0 6])
+                axis([0 6 0 4.5])
             end
         end
        
@@ -218,13 +233,14 @@ for isp=1:length(ibls)
         hold on
         data = squeeze(neiERP(nei,:,:));
         t=0:1/srate:(length(data)-1)/srate;t=t-0.1;
-        hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
-
+        %hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
+        hp(nei)=plot(t,nanmean(data),'color',cmap(nei,:),'linew',3);
         title('mega ERP')
         set(gca,'fontsize',20)
         line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
         line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
         ylim([fromymega toymega])
+        xlim([-0.1 0.3])
         set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
     end
 end
@@ -265,7 +281,7 @@ end
        
 %plot
 h=ERPfigure;
-set(h,'Position',[100 200 400 300])
+set(h,'Position',[100 200 320 300])
 
 clear hp
 for nei=1:nnei
@@ -276,13 +292,14 @@ for nei=1:nnei
     hold on
     data = squeeze(neiERP(nei,:,:));
     t=0:1/srate:(length(data)-1)/srate;t=t-0.1;
-    hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
-
+    %hp(nei)=varplot(t,data','ci',0.95,'color',cmap(nei,:),'linew',3);
+    hp(nei)=plot(t,nanmean(data),'Color',cmap(nei,:),'linew',4);
     title('mega ERP')
     set(gca,'fontsize',20)
     line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
     line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
     ylim([fromymega toymega])
+    xlim([-0.1 0.3])
     set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
 end
 
@@ -428,7 +445,7 @@ for ipeak = 1:2
 
     peak_errs = nan(length(bls),nCond,nPrevCond);
     h=ERPfigure;
-    set(h,'Position',[10 100 200 500])
+    set(h,'Position',[10 100 200 600])
     bls = [2]; 
         
     for bl= bls  
@@ -454,15 +471,26 @@ for ipeak = 1:2
            
             subplot(size(allPeak_amps{1},2),length(bls),(5-i)*length(bls)+ib)
             bar(squeeze(peak_means(ib,i,:)),'FaceColor',colors{i})
-      %     barwitherr(squeeze(peak_means(bl,i,:)),squeeze(peak_errs(bl,i,:)),'FaceColor',Colors{i})
+            barwitherr(squeeze(peak_errs(ib,i,:)),squeeze(peak_means(ib,i,:)),'FaceColor',colors{i})
             hold all
             if ib==1
-                ylabel(['tone ' num2str(i)])
+               % ylabel(['tone ' num2str(i)])
+               
+            end
+            if ib~=1 || i~=1
+                set(gca,'xticklabels',{})
+                set(gca,'yticklabels',{})
+            end
+            set(gca,'fontsize',16)
+            if ipeak==1
+                axis([0 6 -3.5 0])
+            elseif ipeak==2
+                axis([0 6 0 4.5])
             end
         end
         %suptitle([whichpeaks{ipeak} '. Electrode: ' electrodeName '. Block: ' num2str(bl)])
     end
-    FigName = ['Exp2P2bars_' whichpeaks{ipeak}];
+    FigName = ['Exp2P2bars'];
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
 %save for all exp together:
@@ -497,7 +525,6 @@ end
 % must run P2 Bargraphs first to calculate NPallexp_peak_meanz
 pos=[100 200 200 300];
 plotPeaksNei(peaksFolder,ExpN,includeSubjects,ibls,pos)
-
 
 suptitle(['Exp ' num2str(ExpN)])
 FigName = ['peaksNei_Exp' num2str(ExpN)];
@@ -632,7 +659,7 @@ end
        
 %plot
 h=ERPfigure;
-set(h,'Position',[100 200 400 300])
+set(h,'Position',[100 200 320 300])
 
 clear hp
 for nei=1:nnei
@@ -643,17 +670,19 @@ for nei=1:nnei
     hold on
     data = squeeze(neiERP(nei,:,:));
     t=0:1/srate:(length(data)-1)/srate;t=t-0.1;
-    hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
+  %  hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
+    hp(nei)=plot(t,nanmean(data),'color',cmap(nei,:),'linew',4);
 
     title('mega ERP')
     set(gca,'fontsize',20)
     line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
     line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
     ylim([fromymega toymega])
+    xlim([-0.1 0.3])
     set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
 end
 
-    legend(hp,legendlabels(1:nnei),'location','nw','fontsize',16)
+   % legend(hp,legendlabels(1:nnei),'location','nw','fontsize',16)
 
 FigName = ['megacondERP_Exp' num2str(ExpN) 'all'];
 saveas(gcf,[FigFolder filesep FigName],'fig')
@@ -789,7 +818,7 @@ nPrevCond = size(allPeak_amps{1},3);
     
 for ipeak = 1:2
     h=ERPfigure;
-    set(h,'Position',[10 100 1000 500])
+    set(h,'Position',[10 100 1000 600])
 %     
     %1:length(whichpeaks)
     %exclude subjects for which grandcon peak was calculated as median
@@ -824,11 +853,22 @@ for ipeak = 1:2
             subplot(size(allPeak_amps{1},2),length(bls),(5-i)*length(bls)+bl)
 
             bar(squeeze(peak_means(bl,i,:)),'FaceColor',colors{i})
-            ylim([-4 4])
-      %     barwitherr(squeeze(peak_means(bl,i,:)),squeeze(peak_errs(bl,i,:)),'FaceColor',Colors{i})
-            hold all
+            %ylim([-4 4])
+           barwitherr(squeeze(peak_errs(bl,i,:)),squeeze(peak_means(bl,i,:)),'FaceColor',colors{i})
+          hold all
             if bl==1
-                ylabel(['tone ' num2str(i)])
+               % ylabel(['tone ' num2str(i)])
+               
+            end
+            if bl~=1 || i~=1
+                set(gca,'xticklabels',{})
+                set(gca,'yticklabels',{})
+            end
+            set(gca,'fontsize',16)
+            if ipeak==1
+                axis([0 6 -3.5 0])
+            elseif ipeak==2
+                axis([0 6 0 4.5])
             end
             
         end
@@ -840,8 +880,8 @@ for ipeak = 1:2
     end
 
 FigName = ['Exp3P2bars_' whichpeaks{ipeak}];
- saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
- saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')  
+ saveas(gcf,[FigFolder filesep FigName],'fig')
+ saveas(gcf,[FigFolder filesep FigName],'pdf')  
 %save for all exp together:
 pp = peaks(:);
 if ipeak==1
@@ -1041,7 +1081,7 @@ transM = [0 1 2 3 4; ...
 legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 
 h=ERPfigure;
-set(h,'Position',[100 200 1400 300])
+set(h,'Position',[100 200 1200 300])
 nnei=2;%plot until this neighbor
 cmap=parula(4);
 for isp=1:length(iblss)
@@ -1073,13 +1113,14 @@ for isp=1:length(iblss)
         hold on
         data = squeeze(neiERP(nei,:,:));
         t=0:1/srate:(length(data)-1)/srate;t=t-0.1;
-        hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
-
+        %hp(nei)=varplot(t,data','ci',0.9,'color',cmap(nei,:),'linew',3);
+        hp(nei)=plot(t,nanmean(data),'color',cmap(nei,:),'linew',4);
         title('mega ERP')
         set(gca,'fontsize',20)
         line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
         line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
         ylim([fromymega toymega])
+        xlim([-0.1 0.3])
         set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
     end
     

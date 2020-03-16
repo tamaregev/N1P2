@@ -1,5 +1,10 @@
 %The Model as in Herrmann et al.
 % Nov 25 2018, Tamar Regev
+addpath('S:\Lab-Shared\NewDataArch\CommonResources\Tools\Matlab_Tools')
+addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
+addpath('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
+addpath('S:\Lab-Shared\Experiments\MMNchromaF\Analysis')
+
 %% Definitions
 macflag = false;
 switch macflag
@@ -61,7 +66,7 @@ compareSOA(bigDifInd,:)
 %parameters:
 R0=0.5;
 phaseName = 'Passive';
-sigma = 2;%MIDI
+sigma = 8;%MIDI
 tau = 2;%seconds
 SOA_threshold = 0.6;%seconds
 %Mis = nan;%
@@ -82,8 +87,10 @@ for s=2
     %calculate expected activity RA
     [ RA, smpls, stimCodes, seqInd ] = calcRA(  R0, sigma, tau, expdata, eventCoInd, phaseName, SOA_threshold,Mis);
 % pause
+blocks = expdata.(phaseName).blocks;
+
     %plot RA
-    if 0
+    if 1
         ERPfigure;
         isp=0;
         for it=1:size(RA,1)
@@ -119,7 +126,7 @@ for s=2
             Codes = Codes - floor(Codes/10)*10;
             whichCodes = unique(Codes);
             for ic=1:length(whichCodes)
-                Mj = expdata.(phaseName).blocks(it).MIDIs{expdata.(phaseName).blocks(it).CODE_NOTES==ic};%current stimulus MIDI
+                Mj = blocks(it).MIDIs{blocks(it).CODE_NOTES==ic};%current stimulus MIDI
                 is5first = squeeze(seqInd(it,is,:))<=5;
                 if isnan(Mis)
                     ERRA(it,is,ic) = mean(RA(it,is,ic,Codes==ic),4);
@@ -142,6 +149,10 @@ for s=2
     legend(Bnames)
     suptitle(['Subj ' num2str(s) ', Sigma = ' num2str(sigma) ', Tau = ' num2str(tau) ', R0 = ' num2str(R0)])
 end
+
+mkdir(modelFolder,date)
+saveFolder = [modelFolder date filesep];
+save([saveFolder 'RA_Subj' num2str(s)],'RA','ERRA','CIRA','tau','sigma','R0','Mis','Bnames','stimCodes','s','blocks','seqInd','smpls','phaseName')
 %% calculate RA - all participants, taus, sigmas
 
 mkdir(modelFolder,date)
@@ -164,7 +175,7 @@ for s=whichSubjects
     fprintf(['subj %2.0f loading...'],s)
     %load expdata and markers
     FileName = [ExpName '_' Subjects{s} '_' sessions{s}(1)];
-    load(['L' EDATfolder(2:end) FileName '_expdata.mat' ])
+    load([EDATfolder FileName '_expdata.mat' ])
     %load and read markers
     VMRKfile = [ExportFolder FileName  '_dt_RDI_imported.vmrk'];
     [eventCoInd, artInd]=read_markers_artifacts(VMRKfile,15);%check that this is the row of Mk1 indeed
