@@ -1,3 +1,4 @@
+%% run the LME models
 addpath('S:\Lab-Shared\NewDataArch\CommonResources\Tools\Matlab_Tools')
 addpath('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
 
@@ -31,12 +32,11 @@ compare(lmes{3},lmes{2})
 rFormula='Voltage ~ dist_mean + size_jump + dist_mean:size_jump + (1|subject) + (dist_mean-1|subject) + (size_jump-1|subject)';
 N1lme = fitlme(T,rFormula,'Exclude',T.isN1==0);
 P2lme = fitlme(T,rFormula,'Exclude',T.isN1==1);
-%% lme estimates
+%% prep plot lme estimates
 colorsnp={[0.9608 0.5098 0.1882],[0.2353 0.7059 0.2941]};
 Colors={{colorsnp{1},colorsnp{2}},{colorsnp{1},colorsnp{2},colorsnp{1},colorsnp{2},colorsnp{1},colorsnp{2}}};
 
-
-choose=3;
+choose=2;%TODO - make plotting part compatible with choose = 3 without interaction terms
 lme=lmes{choose};
 subjs=unique(T.subject);
 Names = lme.Coefficients.Name;
@@ -79,7 +79,6 @@ Names = lme.CoefficientNames;
 for i=1:length(Names)
     disp([Names{i} ', Estimate = ' num2str(beta(i)) ' d = ' num2str(ds(i)) ' p = ' num2str(lme.Coefficients.pValue(i)) ])
 end
-
 %% plot
 hf=ERPfigure;
 set(hf,'Position',[100 100 400 400])
@@ -546,7 +545,7 @@ choose = 3;
 
 stats=compare(lmess{3},lmess{1});
 %% comaprisons
-choose =2;
+choose =3;
 lme=lmess{choose};
 Names = lme.CoefficientNames;
 Estimates = lme.Coefficients.Estimate;
