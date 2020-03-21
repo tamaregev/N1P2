@@ -1,6 +1,6 @@
 %compute the model for data from all Experiments together
-GHfolder = 'L:\Experiments\N1P2\Analysis\N1P2_GH';
-saveFolder = 'L:\Experiments\N1P2\Analysis\Model\AllExp';
+GHfolder = 'S:\Lab-Shared\N1P2\Analysis\N1P2_GH';
+saveFolder = 'S:\Lab-Shared\N1P2\Analysis\Model\AllExp';
 whichpeaks = {'N1','P2'};
 %% Exp 1 - load 
 Definitions_MMNchroma;

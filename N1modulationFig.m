@@ -1,62 +1,30 @@
 %N1 modulation
+addpath('S:\Lab-Shared\NewDataArch\CommonResources\Tools\Matlab_Tools')
 FigFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\Figures\PaperFigures\N1modulation';
-MixedFolder = 'L:\Experiments\N1P2\Analysis\MixedModel';
+MixedFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\MixedModel';
+HandyFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\HandyStructures';
 addpath(FigFolder)
 addpath('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
 addpath('S:\Lab-Shared\Experiments\MMNchromaF\Analysis')
-
+addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
+addpath('S:\Lab-Shared\Z backup\Tamar\fromZ\Documents\MATLAB\MatlabFunctions\downloaded');
 colors = {[0.3 0.745 0.93],[0.75 0 0.75],[1 0 0],[0.75 0 0.75],[0.3 0.745 0.93]};
 linewidths = [2,2,2,2,2];
-linestyles = {'-.','-.','-','-','-'};
+linestyles = {':',':','-','-','-'};
 fromxERP=-100;toxERP=300;fromyERP=-2.5;toyERP=3.2;
+fromx=-0.1;tox=0.3;
+srate = 512;
+nBlockTypes=8;
+nCond=5;
+megaERP = nan(nBlockTypes,nCond,round((toxERP-fromxERP)/1000*srate));
+fromymega=-2.3;toymega=3.2;
+
+mb=0;%global index to count blocks combining all 3 exp
 %% Experiment 1
 cd('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
 Definitions_MMNchroma;%new idea for the first time! move definitions into a separate script!
-
-%%      stimuli
-s=10;
-load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s} '_expdata.mat'])
-Fstandards = cell(size(bls));
-Fdeviants = cell(size(bls));
-for ib=1:length(bls)
-    bl=bls(ib);
-    Fstandards{bl} = expdata.stimParamsBlocksMMN(bl).toneSynth.Fstandards;
-    Fdeviants{bl} = expdata.stimParamsBlocksMMN(bl).toneSynth.Fdeviants;
-end
-
-hf=ERPfigure;
-set(hf,'Position',[100 100 250 400])
-linethick = 10;
-fromx = 0; tox=30; 
-fromy = 200;toy = 2500;
-
-for ib=1:length(bls)
-    subplot(1,length(bls),ib); 
-    ax(ib) = gca;
-    bl=bls(ib);
-    for i=1:length(Fstandards{bl})
-        line([10, 10+linethick],[Fstandards{bl}{i}, Fstandards{bl}{i}],'linew',4,'Color',colors{cs==i})
-        hold on
-    end
-    line([10, 10+linethick],[Fdeviants{bl}{1}, Fdeviants{bl}{1}],'linew',4,'Color',colors{3})
-    %title(strrep(blocks{bl},'_',' '))
-    if ib==1
-        ylabel('log frequencies [Hz]','fontsize',20);
-    else
-        set(gca,'ytick',[])
-    end                       
-    set(gca,'yscale','log')
-    set(gca,'xtick',[])
-end
-
-linkaxes(ax)
-
-axis([fromx, tox, fromy, toy])
-
-FigName = 'Exp1Stim';
-saveas(gcf,[FigFolder filesep FigName],'fig')
-saveas(gcf,[FigFolder filesep FigName],'pdf')
-
+ibls = [1 2];%relative to blocks in all experiments
+ExpN=1;
 %%      ERPs
 
 if 1 %parameters
@@ -75,6 +43,7 @@ set(hf,'Position',[100 100 460 300])
 
 isp=0;
 for bl = bls
+    mb=mb+1;
     %bl
     isp=isp+1;
     subplot(1,length(bls),isp)
@@ -90,8 +59,9 @@ for bl = bls
     conditions_ordered=conditions(cs);
     for c=cs
         i=find(cs==c);
-        data = nanmean(grandMatrix(:,:,c,:,electrode),4);
+        data = nanmean(grandMatrix(:,includeSubjects,c,:,electrode),4);
         meandata=nanmean(data,2);
+        megaERP(mb,i,:)=meandata(1:size(megaERP,3));
         t=0:1:size(data,1)-1;t=t/srate;t=t+winbegin;t=t*1000;
         plot(t,nanmean(data,2),'DisplayName',conditions{c},'Color',colors{i},'linew',linewidths(i),'linestyle',linestyles{i})
         %plot(t,meandata,'LineWidth',3,'DisplayName',conditions{c},'Color',Colors{i})
@@ -107,6 +77,40 @@ end
 FigName = 'Exp1ERPs';
 saveas(gcf,[FigFolder filesep FigName],'fig')
 saveas(gcf,[FigFolder filesep FigName],'pdf')
+%% plot mega ERP per Exp
+load(['S:\Lab-Shared\Experiments\N1P2\Analysis\grandAverage' filesep 'megaERP'])
+
+
+legendlabels={'tone 1','tone 2','tone 3','tone 4','tone 5'};
+h=ERPfigure;
+set(h,'Position',[100 200 400 300])
+for con=1:nCond
+    data = megaERP(ibls,con,:);
+    newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
+    data = bsxfun(@minus,data,mean(data(:,:,newbsl),3));
+    t=0:1/srate:(length(data)-1)/srate;t=t+winbegin;
+    if con==1
+        r1=rectangle('Position',[0.08, fromymega, 0.04, toymega-fromymega],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+        r2=rectangle('Position',[0.15, fromymega, 0.04, toymega-fromymega],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+    end
+    hold on
+    data=squeeze(data);
+    hp(con)=plot(t,mean(data),'color',colors{con},'linew',3,'linestyle',linestyles{con});
+    
+    set(gca,'fontsize',20)
+    line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
+    line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
+    ylim([fromymega toymega])
+    set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
+end
+llidx=5:-1:1;
+legend(hp(llidx),legendlabels(llidx),'location','nw','fontsize',16)
+   
+FigName = ['megaERP_Exp' num2str(ExpN)];
+saveas(gcf,[FigFolder filesep FigName],'fig')
+saveas(gcf,[FigFolder filesep FigName],'pdf')
+
+plot2svg([FigFolder filesep FigName],gcf)
 
 %%      Bargraphs
 % plot bargraph 5 cond N1
@@ -175,10 +179,7 @@ for ipeak = 1:2
         hb(con).FaceColor = colors{con};
     end
     hold on
-    %add all participants:
-%     for ii=1:size(bxlocs,1)
-%         scatter(bxlocs_noisy(ii,:),bpeaks(ii,:),10,'filled','MarkerFaceColor',[0.5 0.5 0.5])
-%     end
+ 
     set(gca,'xticklabels',blocks(bl))
     if ipeak==1
         ylim([-3.03 0])
@@ -189,56 +190,16 @@ for ipeak = 1:2
     set(gca,'fontsize',20)
     %title([whichpeaks{ipeak} ' of all conditions'],'fontsize',16)
     %legend({'tone 1','tone 2','tone 3','tone 4','tone 5'},'Location','northeastoutside')
-    %ylabel(['mean amplitude ± CI 5-95%, \muV'])
+    %ylabel(['mean amplitude ? CI 5-95%, \muV'])
 
 FigName = 'Exp1bars';
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
 
+%save handy peaks:
+allPeaks=reshape(bpeaks,[size(bpeaks,1),size(bpeaks,2)/length(bls),length(bls)]);
+save([HandyFolder filesep 'Exp' num2str(ExpN) '_' whichpeaks{ipeak}],'allPeaks')
 end
-
-% previous way I did it -
-
-% %%      Bargraphs
-% electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP' 
-% peakdate = '07-Feb-2018';
-% whichpeak = 'N1';
-% addtag = 'largerwin';
-% load([mixedFolder whichpeak '_' electrodeName '_' addtag peakdate])
-% bls=[2,4];
-% peak_means = nan(length(blocks), size(allPeak_amps{1},2));
-% peak_errs = nan(length(blocks), size(allPeak_amps{1},2));
-% includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
-% 
-% for bl=bls
-%     for con = 1:size(allPeak_amps{1},2)
-%         peaks = nanmean(allPeak_amps{bl}(includeSubjects,con,:),3);
-%         peak_means(bl,con) = nanmean(peaks);
-%         CI = Confidence(peaks);
-%         peak_errs(bl,con) = abs(nanmean(peaks)-CI(1));
-%     end
-% end
-% %change location of deviant to middle:
-% peak_dev = peak_means(:,5);peak_means(:,5)=peak_means(:,4);peak_means(:,4)=peak_means(:,3);peak_means(:,3)=peak_dev;clear peak_dev
-% err_dev = peak_errs(:,5);peak_errs(:,5)=peak_errs(:,4);peak_errs(:,4)=peak_errs(:,3);peak_errs(:,3)=err_dev; clear err_dev
-% hf=ERPfigure;
-% set(hf,'Position',[100 100 450 300])
-% 
-% %h = bar(peak_means(bls,:));% Plot with errorbars
-% hb = barwitherr(peak_errs(bls,:), peak_means(bls,:));% Plot with errorbars
-% for con = 1:5
-%     hb(con).FaceColor = colors{con};
-% end
-% 
-% set(gca,'xticklabels',blocks(bls))
-% set(gca,'fontsize',20)
-% 
-% title(['N1 peaks - ' electrodeName],'fontsize',16)
-% ylim([-3.1, 0]);xlim([0.5 2.5])
-% 
-% FigName = 'Exp1bars';
-% saveas(gcf,[FigFolder filesep FigName],'fig')
-% saveas(gcf,[FigFolder filesep FigName],'pdf')
 
 %%      LME model
 savedate = '13-May-2019';%peaks calculated at the Amplitudes_MMNchroma script at:
@@ -282,53 +243,8 @@ Definitions_MMNchromaF;
 addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 bls = 2;
 cs = [1 2 5 3 4];
-
-%%      stimuli
-% plot frequency spread of all blocks
-s=10;
-load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s} '_expdata.mat'])
-Fstandards = cell(size(bls));
-Fdeviants = cell(size(bls));
-for ib=1:length(bls)
-    bl=bls(ib);
-    Fstandards{bl} = expdata.MMN.blocks(bl).toneSynth.Fstandards;
-    Fdeviants{bl} = expdata.MMN.blocks(bl).toneSynth.Fdeviants;
-end
-
-hf=ERPfigure;
-set(hf,'Position',[100 100 120 400])
-
-linethick = 10;
-fromx = 0; tox=30; 
-fromy = 200;toy = 2500;
-
-for ib=1:length(bls)
-    subplot(1,length(bls),ib); 
-    ax(ib) = gca;
-    bl=bls(ib);
-    for i=1:length(Fstandards{bl})
-        line([10, 10+linethick],[Fstandards{bl}{i}, Fstandards{bl}{i}],'linew',4,'Color',colors{cs==i})
-        hold on
-    end
-    line([10, 10+linethick],[Fdeviants{bl}{1}, Fdeviants{bl}{1}],'linew',4,'Color',colors{3})
-    title(strrep(blocks{bl},'_',' '))
-    if ib==1 
-        ylabel('log frequencies [Hz]','fontsize',20); 
-    else
-        set(gca,'ytick',[])
-    end                       
-    set(gca,'yscale','log')
-    set(gca,'xtick',[])
-end
-
-linkaxes(ax)
-
-axis([fromx, tox, fromy, toy])
-
-FigName = 'Exp2stim';
-saveas(gcf,[FigFolder filesep FigName],'fig')
-saveas(gcf,[FigFolder filesep FigName],'pdf')
-
+ibls=3;
+ExpN=2;
 %%      ERPs
 % plot waves on top of each other
 tag = 'BP1-20';
@@ -344,6 +260,7 @@ set(hf,'Position',[100 100 200 300])
 
 cs=[2,3,1,4,5];
 for bl=2
+    mb=mb+1;
     load([grandFolder filesep 'grandMatrix_' blocks{bl} '_' tag])
  %   load([mixedFolder filesep 'grandMatrix_condComb_' mode '_' blocks{bl} '_' matrixdate])
     matrixdate = '26-Apr-2017';
@@ -354,7 +271,12 @@ for bl=2
     t=0:1/srate:(size(grandMatrix,1)-1)/srate;t=t+winbegin;t=t*1000;
     %plot
     for con=cs
-        plot(t,squeeze(nanmean(grandMatrix(:,:,con,electrode),2)),'Color',colors{cs==con},'linew',linewidths(con==cs),'linestyle',linestyles{con==cs})
+        i=find(con==cs);
+        plot(t,squeeze(nanmean(grandMatrix(:,includeSubjects,con,electrode),2)),'Color',colors{i},'linew',linewidths(i),'linestyle',linestyles{con==cs})
+               
+         meandata=squeeze(nanmean(grandMatrix(:,:,con,electrode),2));
+         megaERP(mb,i,:)=meandata(1:size(megaERP,3));
+        
         hold on
     end  
   %  legend(conditions{cs})
@@ -370,6 +292,39 @@ set(gca,'fontsize',20)
 FigName = 'Exp2ERPs';
 saveas(gcf,[FigFolder filesep FigName],'fig')
 saveas(gcf,[FigFolder filesep FigName],'pdf')
+%% plot mega ERP per Exp
+load(['S:\Lab-Shared\Experiments\N1P2\Analysis\grandAverage' filesep 'megaERP'])
+
+legendlabels={'tone 1','tone 2','tone 3','tone 4','tone 5'};
+h=ERPfigure;
+set(h,'Position',[100 200 400 300])
+for con=1:nCond
+    data = megaERP(ibls,con,:);
+    newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
+    data = bsxfun(@minus,data,mean(data(:,:,newbsl),3));
+    t=0:1/srate:(length(data)-1)/srate;t=t+winbegin;
+    if con==1
+        r1=rectangle('Position',[0.08, fromymega, 0.04, toymega-fromymega],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+        r2=rectangle('Position',[0.15, fromymega, 0.04, toymega-fromymega],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+    end
+    hold on
+    data=squeeze(data);
+    hp(con)=plot(t,(data),'color',colors{con},'linew',3,'linestyle',linestyles{con});
+    
+    set(gca,'fontsize',20)
+    line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
+    line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
+    ylim([fromymega toymega])
+    set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
+end
+llidx=5:-1:1;
+legend(hp(llidx),legendlabels(llidx),'location','nw','fontsize',16)
+   
+FigName = ['megaERP_Exp' num2str(ExpN)];
+saveas(gcf,[FigFolder filesep FigName],'fig')
+saveas(gcf,[FigFolder filesep FigName],'pdf')
+
+plot2svg([FigFolder filesep FigName],gcf)
 
 %%      Bargraphs
 % plot bargraph 5 cond N1
@@ -444,7 +399,11 @@ for ipeak = 1:2
     set(gca,'fontsize',20)
     %title([whichpeaks{ipeak} ' of all conditions'],'fontsize',16)
     %legend({'tone 1','tone 2','tone 3','tone 4','tone 5'},'Location','northeastoutside')
-    %ylabel(['mean amplitude ± CI 5-95%, \muV'])
+    %ylabel(['mean amplitude ? CI 5-95%, \muV'])
+    %save handy peaks:
+allPeaks=reshape(bpeaks,[size(bpeaks,1),size(bpeaks,2)/length(bls),length(bls)]);
+save([HandyFolder filesep 'Exp' num2str(ExpN) '_' whichpeaks{ipeak}],'allPeaks')
+
 end
 
 FigName = 'Exp2bars';
@@ -494,47 +453,9 @@ end
 cd('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 Definitions_N1P2
 cd(GHfolder)
-
-%%      stimuli
-s=10;
-load([EDATfolder ExpName '_' Subjects{s} '_' sessions{s} '_expdata.mat'])
-frequencies = cell(size(bls));
-for ib=1:length(bls)
-    bl=bls(ib);
-    frequencies{bl} = expdata.Passive.blocks(bl).toneSynth.frequencies;
-end
-
-hf=ERPfigure;
-set(hf,'Position',[100 100 500 400])
-linethick = 10;
-fromx = 0; tox=30;
-fromy = 200;toy = 2500;
-
-for ib=1:length(bls)
-    subplot(1,length(bls),ib); 
-    ax(ib) = gca;
-    bl=bls(ib);
-    for i=1:length(frequencies{bl})
-        line([10, 10+linethick],[frequencies{bl}{i}, frequencies{bl}{i}],'linew',4,'Color',colors{i})
-        hold on
-    end
-    title(strrep(blocks{bl},'_',' '))
-    if ib==1
-        ylabel('log frequencies [Hz]','fontsize',20);
-    else
-        set(gca,'ytick',[])
-    end                       
-    set(gca,'yscale','log')
-    set(gca,'xtick',[])
-end
-
-linkaxes(ax)
-
-axis([fromx, tox, fromy, toy])
-
-saveas(gcf,[FigFolder filesep 'Exp3spreads'],'fig')
-saveas(gcf,[FigFolder filesep 'Exp3spreads'],'pdf')
-
+ibls=[4:8];
+iblss={[4],[5 6],[7 8]};
+ExpN=3;
 %%      ERPs
 % load and plot grand 5 conds -
 matrixdate='29-Oct-2018';
@@ -547,6 +468,7 @@ h=ERPfigure;
 set(h,'Position',[100 100 1200 300])
 
 for bl = 1:5
+    mb=mb+1;
     subplot(1,5,bl)
     load([grandFolder filesep 'grandMatrix_condComb_' tag '_Bl' blocks{bl} '_' matrixdate])
     %baseline
@@ -554,10 +476,14 @@ for bl = 1:5
     grandMatrix = bsxfun(@minus,grandMatrix,mean(grandMatrix(newbsl,:,:,:,:),1));
     t=0:1/srate:(size(grandMatrix,1)-1)/srate;t=t+winbegin;t=t*1000;
      %plot
-     r=rectangle('Position',[0.08, fromy, 0.04, toy-fromy],'facecolor',[0.7 0.7 0.7],'edgecolor','none');
+     r=rectangle('Position',[0.08, fromyERP, 0.04, toyERP-fromyERP],'facecolor',[0.7 0.7 0.7],'edgecolor','none');
 
     for con=1:size(grandMatrix,3)
-        ph(con)=plot(t,nanmean(nanmean(grandMatrix(:,whichSubjects,con,:,electrode),4),2),'Color',colors{con},'linew',linewidths(con),'linestyle',linestyles{con});
+        data = nanmean(grandMatrix(:,includeSubjects,con,:,electrode),4);
+        meandata=nanmean(data,2);
+        ph(con)=plot(t,meandata,'Color',colors{con},'linew',linewidths(con),'linestyle',linestyles{con});
+        megaERP(mb,con,:)=meandata(1:size(megaERP,3));
+         
         hold on
     end  
     title(blocks{bl})
@@ -576,6 +502,43 @@ axis([fromxERP, toxERP, fromyERP, toyERP])
 FigName = 'Exp3ERPs';
 saveas(gcf,[FigFolder filesep FigName],'fig')
 saveas(gcf,[FigFolder filesep FigName],'pdf')
+%% plot mega ERP per Exp
+load(['S:\Lab-Shared\Experiments\N1P2\Analysis\grandAverage' filesep 'megaERP'])
+
+legendlabels={'tone 1','tone 2','tone 3','tone 4','tone 5'};
+h=ERPfigure;
+set(h,'Position',[100 200 1200 300])
+for isp=1:length(iblss)
+    subplot(1,length(iblss),isp)
+    for con=1:nCond
+        ibls=iblss{isp};
+        data = megaERP(ibls,con,:);
+        newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
+        data = bsxfun(@minus,data,mean(data(:,:,newbsl),3));
+        t=0:1/srate:(length(data)-1)/srate;t=t+winbegin;
+        if con==1
+            r1=rectangle('Position',[0.08, fromymega, 0.04, toymega-fromymega],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+            r2=rectangle('Position',[0.15, fromymega, 0.04, toymega-fromymega],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+        end
+        hold on
+        hp(con)=plot(t,squeeze(mean(data,1)),'color',colors{con},'linew',3,'linestyle',linestyles{con});
+
+        set(gca,'fontsize',20)
+        line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
+        line([fromx, tox],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
+        ylim([fromymega toymega])
+        xlim([fromx tox])
+        set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
+    end
+end
+llidx=5:-1:1;
+legend(hp(llidx),legendlabels(llidx),'location','nw','fontsize',16)
+   
+FigName = ['megaERP_Exp' num2str(ExpN)];
+saveas(gcf,[FigFolder filesep FigName],'fig')
+saveas(gcf,[FigFolder filesep FigName],'pdf')
+
+plot2svg([FigFolder filesep FigName],gcf)
 
 %%      Bargraphs
 % plot bargraph 5 cond N1
@@ -597,13 +560,7 @@ for ipeak = 1:length(whichpeaks)
         allSubjects = 1:length(Subjects);
         includeSubjects = allSubjects(~ismember(allSubjects,badSubjects));
     else
-        mss = [];
-        for bl=1:length(allGrandcon_as_median)
-            allGrandcon_as_median{bl}(:,:,ipeak);
-            [r, c]=find(allGrandcon_as_median{bl}(:,:,ipeak));
-            mss = [mss, r'];
-        end
-        mss = unique(mss);
+       
         allSubjects = 1:length(Subjects);
         includeSubjects = allSubjects(~ismember(allSubjects,[badSubjects,mss]));
     end    
@@ -652,11 +609,15 @@ for ipeak = 1:length(whichpeaks)
     hl=legend([hb(5),hb(4),hb(3),hb(2),hb(1)],{' tone 5',' tone 4',' tone 3',' tone 2',' tone 1'});
     set(hl,'Position',[0.92 0.4 0.06 0.4])
 
-    ylabel(['mean amplitude ± CI 5-95%, \muV'])
+    ylabel(['mean amplitude ? CI 5-95%, \muV'])
     
 FigName = 'Exp3bars';
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'fig')
 saveas(gcf,[FigFolder filesep FigName '_' whichpeaks{ipeak}],'pdf')
+
+%save handy peaks:
+allPeaks=reshape(bpeaks,[size(bpeaks,1),size(bpeaks,2)/length(bls),length(bls)]);
+save([HandyFolder filesep 'Exp' num2str(ExpN) '_' whichpeaks{ipeak}],'allPeaks')
 
 end
 
@@ -697,8 +658,45 @@ for ib=[1,2,3,4,5]
     end
 end
 
+%% plot MEGA ERP
+%Note: must run all bargraphs plots orderly in order to calc megaERP
+%once saved, can be loaded
+%save([grandFolder filesep 'megaERP'],'megaERP')
+load([grandFolder filesep 'megaERP'])
 
-%% bigTable
+legendlabels={'tone 1','tone 2','tone 3','tone 4','tone 5'};
+h=ERPfigure;
+fromymega=-2;toymega=3;
+for con=1:nCond
+    data = squeeze(megaERP(:,con,:));
+    newbsl = floor((bslwin(1)-winbegin)*srate)+1:floor((bslwin(2)-winbegin)*srate);
+    data = bsxfun(@minus,data,mean(data(:,newbsl),2));
+    t=0:1/srate:(length(data)-1)/srate;t=t+winbegin;
+    if con==1
+        r1=rectangle('Position',[0.08, fromyERP, 0.04, toyERP-fromyERP],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+        r2=rectangle('Position',[0.15, fromyERP, 0.04, toyERP-fromyERP],'facecolor',[0.9 0.9 0.9],'edgecolor','none');
+    end
+    hold on
+    hp(con)=varplot(t,data','ci',0.9,'color',colors{con},'linew',3,'linestyle',linestyles{con});
+    
+    title('mega ERP')
+    set(gca,'fontsize',20)
+    line([0,0],[fromymega, toymega],'linestyle','-.','col','k','handleVisibility','off');
+    line([fromxERP, toxERP],[0, 0],'linestyle','-.','col','k','handleVisibility','off');
+    ylim([fromymega toymega])
+    set(gca,'xtick',[-0.1:0.1:0.3],'xticklabels',[-0.1 0 0.1 0.2 0.3])
+end
+llidx=5:-1:1;
+legend(hp(llidx),legendlabels(llidx),'location','nw','fontsize',16)
+   
+FigName = 'megaERP';
+saveas(gcf,[FigFolder filesep FigName],'fig')
+saveas(gcf,[FigFolder filesep FigName],'pdf')
+saveas(gcf,[FigFolder filesep FigName],'svg')
+
+plot2svg([FigFolder filesep FigName],gcf)
+
+%% LMEmodels using BIG Table
 load([MixedFolder filesep 'theTable'])
 formulas = {'Voltage ~ size_jump*Potential + (1|subject) + (1|ExpN)',...
             'Voltage ~ Potential*spread*dist_mean + (1|subject) + (1|ExpN)',...     
