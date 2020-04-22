@@ -1,0 +1,75 @@
+
+<strong>Linear mixed-effects model fit by ML</strong>
+
+<strong>Model information:</strong>
+    Number of observations            6200
+    Fixed effects coefficients          12
+    Random effects coefficients        186
+    Covariance parameters                7
+
+<strong>Formula:</strong>
+    Linear Mixed Formula with 6 predictors.
+
+<strong>Model fit statistics:</strong>
+    AIC      BIC      LogLikelihood    Deviance
+    15492    15620    -7727.1          15454   
+
+<strong>Fixed effects coefficients (95% CIs):</strong>
+    Name                           Estimate      SE           tStat      DF      pValue        Lower      
+    'isN1'                           -0.75833      0.10195    -7.4386    6188     1.156e-13       -0.95818
+    'isP2'                           -0.35626      0.11468    -3.1065    6188     0.0019018       -0.58108
+    'dist_mean:isN1'                 0.054318     0.013048     4.1628    6188     3.186e-05       0.028738
+    'size_jump:isN1'                 0.027468    0.0092462     2.9708    6188     0.0029821      0.0093424
+    'spread:isN1'                     0.07396     0.012298     6.0141    6188    1.9118e-09       0.049852
+    'dist_mean:isP2'                -0.027751     0.013548    -2.0484    6188      0.040563      -0.054309
+    'size_jump:isP2'                 0.042989    0.0093284     4.6084    6188    4.1384e-06       0.024703
+    'spread:isP2'                    0.016474     0.012298     1.3396    6188       0.18043     -0.0076338
+    'dist_mean:spread:isN1'        -0.0042978    0.0016034    -2.6804    6188      0.007373     -0.0074411
+    'size_jump:spread:isN1'        -0.0022522     0.001132    -1.9895    6188      0.046692     -0.0044713
+    'dist_mean:spread:isP2'         0.0025376    0.0016034     1.5826    6188       0.11356    -0.00060565
+    'size_jump:spread:isP2'        -0.0028294     0.001132    -2.4994    6188      0.012465     -0.0050486
+
+
+    Upper      
+       -0.55848
+       -0.13144
+       0.079897
+       0.045594
+       0.098067
+      -0.001193
+       0.061276
+       0.040582
+     -0.0011545
+     -3.298e-05
+      0.0056809
+    -0.00061025
+
+<strong>Random effects covariance parameters (95% CIs):</strong>
+Group: subject (31 Levels)
+    Name1         Name2         Type         Estimate    Lower      Upper  
+    'isN1'        'isN1'        'std'        0.36652     0.27582    0.48705
+
+Group: subject (31 Levels)
+    Name1         Name2         Type         Estimate    Lower      Upper  
+    'isP2'        'isP2'        'std'        0.46891     0.35744    0.61514
+
+Group: subject (31 Levels)
+    Name1                   Name2                   Type         Estimate    Lower        Upper   
+    'dist_mean:isN1'        'dist_mean:isN1'        'std'        0.010417    0.0048415    0.022413
+
+Group: subject (31 Levels)
+    Name1                   Name2                   Type         Estimate    Lower       Upper   
+    'dist_mean:isP2'        'dist_mean:isP2'        'std'        0.02281     0.015821    0.032886
+
+Group: subject (31 Levels)
+    Name1                   Name2                   Type         Estimate     Lower        Upper   
+    'size_jump:isN1'        'size_jump:isN1'        'std'        0.0064633    0.0025392    0.016451
+
+Group: subject (31 Levels)
+    Name1                   Name2                   Type         Estimate     Lower        Upper   
+    'size_jump:isP2'        'size_jump:isP2'        'std'        0.0094385    0.0050904    0.017501
+
+Group: Error
+    Name             Estimate    Lower      Upper  
+    'Res Std'        0.82245     0.80791    0.83724
+
