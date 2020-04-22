@@ -1,7 +1,7 @@
 function [ dataFolder, bT, bRA, bwhichSubjects, taus, sigmas, whichpeaks ] = loadVarslmes( Folder )
 %LOADVARSLMES is instead of running Section 2 in the script
 %lmeModels_allExp before every Section..
-dataFolder = [Folder filesep 'allExp'];
+dataFolder = [Folder filesep 'allExp' filesep];
 cd(dataFolder)
 
 load dataTable bT
