@@ -1,4 +1,4 @@
-%P2 modelation
+%P2 modulation
 FigFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\Figures\PaperFigures\P2modulation';
 MixedFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\MixedModel';
 peaksFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\PeaksFolder';
@@ -155,7 +155,7 @@ saveas(gcf,[FigFolder filesep FigName],'fig')
 saveas(gcf,[FigFolder filesep FigName],'pdf')
 plot2svg([FigFolder filesep FigName],gcf)
 
-%% calc megacondERP
+%% calc megacondERP - neighbors
 
 if 1 %parameters
     electrodeName = 'Cz';%'Fz'/'Cz'/'central cluster'/'GFP' 
@@ -202,7 +202,7 @@ legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 h=ERPfigure;
 set(h,'Position',[100 200 500 300])
 
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
 for isp=1:length(ibls)
     subplot(1,length(ibls),isp)
@@ -261,7 +261,7 @@ transM = [0 1 2 3 4; ...
       
 legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
     
 neiERP = nan(length(legendlabels),length(ibls)*8,size(megacondERP,4)); 
@@ -532,7 +532,7 @@ saveas(gcf,[FigFolder filesep FigName],'fig')
 saveas(gcf,[FigFolder filesep FigName],'pdf')
 plot2svg([FigFolder filesep FigName],gcf)
 
-%% calc megacondERP
+%% calc megacondERP - neighbors
 
 mode = 'lme-BP1-20';
 matrixdate = '15-Nov-2018';
@@ -582,7 +582,7 @@ legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 h=ERPfigure;
 set(h,'Position',[100 200 200 300])
 
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
 for isp=1:length(ibls)
     subplot(1,length(ibls),isp)
@@ -639,7 +639,7 @@ transM = [0 1 2 3 4; ...
       
 legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
     
 neiERP = nan(length(legendlabels),length(ibls)*8,size(megacondERP,4)); 
@@ -916,7 +916,7 @@ saveas(gcf,[FigFolder filesep FigName],'fig')
 saveas(gcf,[FigFolder filesep FigName],'pdf')
 plot2svg([FigFolder filesep FigName],gcf)
 
-%% calc megacondERP
+%% calc megacondERP - neighbors
 
 matrixdate='29-Oct-2018';
 tag = 'Bp1-20';
@@ -964,7 +964,7 @@ legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 
 h=ERPfigure;
 set(h,'Position',[100 200 1200 300])
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
 for isp=1:length(ibls)
     subplot(1,length(ibls),isp)
@@ -1021,7 +1021,7 @@ transM = [0 1 2 3 4; ...
       
 legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
     
 neiERP = nan(length(legendlabels),length(ibls)*8,size(megacondERP,4)); 
@@ -1082,7 +1082,7 @@ legendlabels={'neighbor 1','neighbor 2','neighbor 3','neighbor 4'};
 
 h=ERPfigure;
 set(h,'Position',[100 200 1200 300])
-nnei=2;%plot until this neighbor
+nnei=4;%plot until this neighbor
 cmap=parula(4);
 for isp=1:length(iblss)
     subplot(1,length(iblss),isp)

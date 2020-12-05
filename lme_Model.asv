@@ -86,7 +86,10 @@ save bwhichSubjects bwhichSubjects
 Definitions_Model
 Folder = singleTrials_directory;%The folder where single trial data live
 addpath(code_directory)%code directory
+addpath('S:\Lab-Shared\NewDataArch\CommonResources\Tools\Matlab_Tools')
+disp('loading variables...')
  [ dataFolder, bT, bRA, bwhichSubjects, taus, sigmas, whichpeaks ] = loadVarslmes( Folder );
+ disp('Done')
 %% Section 3: Calculate the lme model for all taus and sigmas - N1 and P2
 
 whichExps = {1,2,3,'all'};
@@ -153,9 +156,15 @@ end
 %(more precisely plot D = -2* log likelihood ratio (theta, theta max) as in Wilk's theorem
 whichExps = {1,2,3,'all'};
 %run for Experiments 1 to 3 as well as for all together
+colorsnp={[0.9608 0.5098 0.1882],[0.2353 0.7059 0.2941]};%colors N1 P2
+%Gray colormap:
+cg=nan(256,1);
+cg(1:36)=linspace(0.3,0.8,36);cg(37:end)=linspace(0.8,1,220);
+cg=repmat(cg,[1,3]);
+ca = {[0 40],[0 15],[0 100],[0 100]};
 for iExp = 1:length(whichExps)
+%for iExp = 1
     whichExp=whichExps{iExp};%whichExp can be 1 2 3 or 'all'
-    ca=[0 100];
     modelName = 'lme';
     dataFolder = [Folder filesep 'allExp' filesep];
     cd(dataFolder)
@@ -165,6 +174,7 @@ for iExp = 1:length(whichExps)
     bestaus=nan(1,2);
     bestsigmas=nan(1,2);
     h=ERPfigure;
+    colormap(cg);
     set(h,'Position',[100 100 700 300])
     for ipeak = 1:2
         hsp{ipeak}=subplot(1,2,ipeak);
@@ -175,15 +185,15 @@ for iExp = 1:length(whichExps)
         rows(1,ipeak)=row;cols(1,ipeak)=col;
         bestaus(1,ipeak)=taus(col);bestsigmas(1,ipeak)=sigmas(row);
         hold on
-        plot([taus(col) taus(col)],[sigmas(1) sigmas(end)],'Color',[1 0 0],'linewidth',1)
-        plot([taus(1) taus(end)],[sigmas(row) sigmas(row)],'Color',[1 0 0],'linewidth',1)
-        text(1,15,['(' num2str(taus(col)) ',' num2str(sigmas(row)) ')'],'Color',[1,0,0],'fontsize',18);
+        plot([taus(col) taus(col)],[sigmas(1) sigmas(end)],'Color',colorsnp{ipeak},'linewidth',1)
+        plot([taus(1) taus(end)],[sigmas(row) sigmas(row)],'Color',colorsnp{ipeak},'linewidth',1)
+        %text(1,15,['(' num2str(taus(col)) ',' num2str(sigmas(row)) ')'],'Color',[1,0,0],'fontsize',18);
 
         title([ whichpeaks{ipeak}])
         colorbar
         xlabel('taus')
         ylabel('sigmas')
-        %caxis([0 100]); % This is the 0.01 critical value of the chi2, df=2 distribution.
+        caxis([0 6]); % This is the 0.01 critical value of the chi2, df=2 distribution.
         set(gca,'fontsize',16)
 
     end
@@ -191,9 +201,9 @@ for iExp = 1:length(whichExps)
     saveas(gcf,['Exp ' num2str(whichExp) '_LLR'],'png')
     saveas(gcf,['Exp ' num2str(whichExp) '_LLR'],'pdf')
 
-    % one colorscale for all
+    % one colorscale for N1 and P2
     for ipeak=1:2
-        caxis(hsp{ipeak},ca)
+        caxis(hsp{ipeak},ca{iExp})
     end
     saveas(gcf,['Exp ' num2str(whichExp) '_LLR_caxis'],'png')
     saveas(gcf,['Exp ' num2str(whichExp) '_LLR_caxis'],'pdf')
@@ -1151,7 +1161,6 @@ title('\sigma as a function of frequency spread','fontsize',20)
 ylabel('Best fit \sigma (semitones)','fontsize',20)
 xlabel('Mean spread in the sequence (semitones)','fontsize',20)
 saveas(gcf,[saveFolder 'bestsigmas_booterrors'],'png')
-
     %% anova of lme for the bootstrap
 %create table
 saveFolder = [Folder filesep 'spreads' filesep];
@@ -1208,8 +1217,7 @@ disp(['F(' num2str(df1) ',' num2str(df2) ')=' num2str(f) ', d=' num2str(d) ', p=
 disp('comparing spreads')
 [p f df1 df2]=coefTest(lme,[0 0 1 -1]);d=sqrt(f)/sqrt(100);
 disp(['F(' num2str(df1) ',' num2str(df2) ')=' num2str(f) ', d=' num2str(d) ', p=' num2str(p)])
-
-    %% scramble labels within spreads
+%% Section 11: scramble labels within spreads
 
 whichExp=3;
 modelName = 'lme';
@@ -1244,7 +1252,7 @@ parfor ip=1:np+1
     ll(ip,:,:,:,:) = llp;
 end
 save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scrambles')
-    %% plot
+    %% plot - each scramble
     saveFolder = [Folder filesep 'spreads' filesep];
     np=100;
     tag = num2str(np);
@@ -1286,15 +1294,36 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
     bestParamsScrambled=bestParams;
     save([saveFolder 'bestParamsScrambled'],'bestParamsScrambled');
     clear bestParams
-    %% plot best sigmas real+scrambled
+    %% plot fig4D - best sigmas real+scrambled
     
-    colorsnp={[0.9608 0.5098 0.1882],[0.2353 0.7059 0.2941]};
-
+    colorsnp = {[0.9608 0.5098 0.1882],[0.2353 0.7059 0.2941]};
+   % colorsprm = {[1,0.8784,0.7882],[0.8941,0.9608,0.9020]};
+    colorsprm = {[0.8706    0.7569    0.6706],[0.7922    0.8706    0.8000]};
     
+    saveFolder = [Folder filesep 'spreads' filesep];
     load([saveFolder 'bestParams']);
     load([saveFolder 'bestSigmasBoot'])
     load([saveFolder 'bestParamsScrambled']);
-
+    freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
+    meanfreqspreads = mean(freqspreads');
+    ranges = meanfreqspreads*4;
+    whichXplot = 'range';%can be 'spread' or 'range'. Generated for range
+    whichYplot = 'sigma';%can be 'tau' or 'sigma'. Generated for both
+    
+    switch whichXplot
+        case 'spread'
+            Xplot = meanfreqspreads;
+        case 'range'
+            Xplot = ranges;
+    end
+    switch whichYplot
+        case 'sigma'
+            iY = 1;
+        case 'tau'
+            iY = 2;
+    end
+    
+    
     %First, the scrambled:
     errorbars = nan(length(meanfreqspreads),2);
     for ipeak = 1:2
@@ -1307,18 +1336,43 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
     end
     ERPfigure;
     hold on
-    h1=plot(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),'m-.','linewidth',2);
-    h2=plot(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),'c-.','linewidth',2);
-    plot(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),'.m','MarkerSize',30,'HandleVisibility','off')
-    plot(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),'.c','MarkerSize',30,'HandleVisibility','off')
-    errorbar(meanfreqspreads,mean(bestParamsScrambled(:,:,1,1)),errorbars(:,1),'m:','HandleVisibility','off')
-    errorbar(meanfreqspreads,mean(bestParamsScrambled(:,:,2,1)),errorbars(:,1),'c:','HandleVisibility','off')
-    ylim([2 14])
-    xlim([2 14])
-    plot([2 14],[2 14],'k:')
-    title('\sigma as a function of frequency spread')
-    ylabel('Best fit \sigma (semitones)')
-    xlabel('Mean spread in the sequence (semitones)')
+    h1=plot(Xplot,mean(bestParamsScrambled(:,:,1,iY)),'-.','Color',colorsprm{1},'linewidth',1);
+    h2=plot(Xplot,mean(bestParamsScrambled(:,:,2,iY)),'-.','Color',colorsprm{2},'linewidth',1);
+    plot(Xplot,mean(bestParamsScrambled(:,:,1,iY)),'.','Color',colorsprm{1},'MarkerSize',22,'HandleVisibility','off')
+    plot(Xplot,mean(bestParamsScrambled(:,:,2,iY)),'.','Color',colorsprm{2},'MarkerSize',22,'HandleVisibility','off')
+    errorbar(Xplot,mean(bestParamsScrambled(:,:,1,iY)),errorbars(:,1),'.','Color',colorsprm{1},'HandleVisibility','off')
+    errorbar(Xplot,mean(bestParamsScrambled(:,:,2,iY)),errorbars(:,1),'.','Color',colorsprm{2},'HandleVisibility','off')
+    switch whichXplot
+        case 'spread'
+            switch whichYplot
+                case 'sigma'
+                    
+                    ylim([2 14])
+                    xlim([2 14])
+                    plot([2 14],[2 14],'k:')    
+            end
+            title(['\' whichYplot ' as a function of frequency intervals'])
+            xlabel('Mean inter-neighbor intervals (range/4, semitones)')
+        case 'range'
+            switch whichYplot
+                case 'sigma'
+                    xlim([8 54]);ylim([2 14])
+                    plot([8 54],[2 14],'k:')
+                case 'tau'
+                    xlim([8 54]);ylim([-5 10])
+
+            end
+            
+            title(['\' whichYplot ' as a function of range'])
+            xlabel('Range (semitones)')
+    end
+    switch whichYplot
+        case 'sigma'
+            ylabel(['Best fit \' whichYplot ' (semitones)'])
+        case 'tau'
+            ylabel(['Best fit \' whichYplot ' (seconds)'])
+    end
+    
     %now add the real data:
     %calc error bars from bootstrap
     errorbars = nan(length(meanfreqspreads),2);
@@ -1331,20 +1385,17 @@ save([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scra
         end
     end
    
-    h3=plot(meanfreqspreads,bestParams(:,1,1),'Color',colorsnp{1},'linewidth',2);
-    h4=plot(meanfreqspreads,bestParams(:,2,1),'Color',colorsnp{2},'linewidth',2);
-    plot(meanfreqspreads,bestParams(:,1,1),'.','Color',colorsnp{1},'MarkerSize',50,'HandleVisibility','off')
-    plot(meanfreqspreads,bestParams(:,2,1),'.','Color',colorsnp{2},'MarkerSize',50,'HandleVisibility','off')
-    errorbar(meanfreqspreads,bestParams(:,1,1),errorbars(:,1),'Color',colorsnp{1},'HandleVisibility','off')
-    errorbar(meanfreqspreads,bestParams(:,2,1),errorbars(:,1),'Color',colorsnp{2},'HandleVisibility','off')
-    title('\sigma as a function of frequency spread')
-    ylabel('Best fit \sigma (semitones)')
-    xlabel('Mean spread in the sequence (semitones)')
-    hl=legend([h3,h4,h1,h2],{'N1','P2','N1 scrambled','P2 scrambled'},'Location','se');
-    set(gca,'fontsize',20)
-    set(hl,'fontsize',16)
-    saveas(gcf,[saveFolder 'bestsigmasSpreads_boot+scrambled'],'png')
-    saveas(gcf,[saveFolder 'bestsigmasSpreads_boot+scrambled'],'pdf')
+    h3=plot(Xplot,bestParams(:,1,iY),'Color',colorsnp{1},'linewidth',2);
+    h4=plot(Xplot,bestParams(:,2,iY),'Color',colorsnp{2},'linewidth',2);
+    plot(Xplot,bestParams(:,1,iY),'.','Color',colorsnp{1},'MarkerSize',22,'HandleVisibility','off')
+    plot(Xplot,bestParams(:,2,iY),'.','Color',colorsnp{2},'MarkerSize',22,'HandleVisibility','off')
+    errorbar(Xplot,bestParams(:,1,iY),errorbars(:,1),'.','Color',colorsnp{1},'HandleVisibility','off')
+    errorbar(Xplot,bestParams(:,2,iY),errorbars(:,1),'.','Color',colorsnp{2},'HandleVisibility','off')
+    hl=legend([h3,h4,h1,h2],{'N1','P2','N1 permuted','P2 permuted'},'Location','se');
+    set(gca,'fontsize',16)
+    set(hl,'fontsize',14)
+    saveas(gcf,[saveFolder 'best' whichYplot 'Spreads_boot+scrambled'],'png')
+    saveas(gcf,[saveFolder 'best' whichYplot 'Spreads_boot+scrambled'],'pdf')
     %% compare real sigma to scrambled sigmas
 saveFolder = [Folder filesep 'spreads' filesep];
 freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
@@ -1380,7 +1431,16 @@ for ipeak=1:2
     end
 end  
 slopes_boots=slopes;
-    %% Display scrambled slopes
+save([saveFolder 'slopes_boots'],'slopes_boots')
+    %% display scrambled slopes
+saveFolder = [Folder filesep 'spreads' filesep];
+
+load([saveFolder 'bestParams']);
+bestsigmas=bestParams(:,:,1);
+load([saveFolder 'bestSigmasBoot'])
+load([saveFolder 'bestParamsScrambled']);
+freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
+meanfreqspreads = mean(freqspreads');
 x=meanfreqspreads.*4;
 clear lme
 for ipeak=1:2
@@ -1404,32 +1464,37 @@ for ipeak=1:2
     
 end
 
-% figure
-% x=meanfreqspreads;
-% slopes=nan(size(bestParamsScrambled,1)+1,2);
-% for ipeak=1:2
-%     subplot(1,2,ipeak)
-%     hold off
-%     y=bestsigmas(:,ipeak)';
-%     [p,s]=polyfit(x,y,1);
-%     slopes(1,ipeak)=p(1);
-%     [y_fit,d]=polyval(p,x,s);
-%     hold on
-%     plot(x,y-y(1),'o','Color','k');
-%     plot(x,y_fit-y_fit(1),'Color','k','linewidth',3);
-%         
-%     for iboot=1:size(bestParamsScrambled,1)
-%         y = bestParamsScrambled(iboot,:,ipeak,1);
-%         [p,s]=polyfit(x,y,1);
-%         slopes(iboot+1,ipeak)=p(1);
-%         [y_fit,d]=polyval(p,x,s);
-%         plot(x,y-y(1),'o','Color',c(iboot,:));
-%         plot(x,y_fit-y_fit(1),'Color',c(iboot,:));
-%     end
-% end  
-% slopes_scrambles=slopes;
-
+figure
+x=meanfreqspreads;
+slopes=nan(size(bestParamsScrambled,1)+1,2);
+for ipeak=1:2
+    subplot(1,2,ipeak)
+    hold off
+    y=bestsigmas(:,ipeak)';
+    [p,s]=polyfit(x,y,1);
+    slopes(1,ipeak)=p(1);
+    [y_fit,d]=polyval(p,x,s);
+    hold on
+    plot(x,y-y(1),'o','Color','k');
+    plot(x,y_fit-y_fit(1),'Color','k','linewidth',3);
+        
+    for iboot=1:size(bestParamsScrambled,1)
+        y = bestParamsScrambled(iboot,:,ipeak,1);
+        [p,s]=polyfit(x,y,1);
+        slopes(iboot+1,ipeak)=p(1);
+        [y_fit,d]=polyval(p,x,s);
+        plot(x,y-y(1),'o','Color',c(iboot,:));
+        plot(x,y_fit-y_fit(1),'Color',c(iboot,:));
+    end
+end  
+slopes_scrambles=slopes;
+save([saveFolder 'slopes_scrambles'],'slopes_scrambles')
     %% plot results boot
+    saveFolder = [Folder filesep 'spreads' filesep];
+
+    load([saveFolder 'slopes_boots'])
+    load([saveFolder 'slopes_scrambles'])
+    
     ERPfigure
     slopes=slopes_boots;
     compare2 = mean(slopes_scrambles(2:end,ipeak));
@@ -1498,3 +1563,341 @@ for ipeak = 1:length(whichpeaks)
     xlim([0 101])
 end
 saveas(gcf,[saveFolder 'compare_to_scrambles'],'pdf')
+%% Section 12: compare spreads with constant or varying tau (and sigma)
+% load ll for the separate range conditions
+saveFolder = [Folder filesep 'spreads' filesep];
+load([saveFolder 'llspreads'],'ll','spread2block','whichExp')
+llspreads=ll;clear ll
+%load ll of Exp 3
+saveFolder = [Folder filesep 'allExp' filesep];
+whichExp = 3;modelName = 'lme';
+llExp3=nan(numel(sigmas),numel(taus),numel(whichpeaks));
+for ipeak=1:length(whichpeaks)
+    load([saveFolder 'll' whichpeaks{ipeak} '_Exp' num2str(whichExp) '_' modelName],'ll')
+    llExp3(:,:,ipeak)=ll;clear ll
+end
+
+%find max ll for Exp 3:
+bestsigmas_Exp3=nan(size(whichpeaks));bestaus_Exp3=nan(size(whichpeaks));
+rows_Exp3=nan(size(whichpeaks));cols_Exp3=nan(size(whichpeaks));
+llExp3max=nan(size(whichpeaks));
+for ipeak =1:length(whichpeaks)
+    [r,c]=find(llExp3(:,:,ipeak)==max(max(llExp3(:,:,ipeak))));
+    rows_Exp3(ipeak)=r;cols_Exp3(ipeak)=c;
+    bestsigmas_Exp3(ipeak)=sigmas(r);bestaus_Exp3(ipeak)=taus(c);
+    llExp3max(ipeak)=max(max(llExp3(:,:,ipeak)));
+end
+   
+%find max ll for Exp 3 spreads/range conditions, 3 tau, 3 sigmas:
+bestsigmas_spreads=nan(size(llspreads,3),size(llspreads,4));bestaus_spreads=nan(size(llspreads,3),size(llspreads,4));
+rows_spreads=nan(size(llspreads,3),size(llspreads,4));cols_spreads=nan(size(llspreads,3),size(llspreads,4));
+llspreadsmax=nan(size(llspreads,3),size(llspreads,4));
+for ipeak =1:length(whichpeaks)
+    for is = 1:length(spread2block)
+        [r,c]=find(llspreads(:,:,is,ipeak)==max(max(max(llspreads(:,:,is,ipeak)))));
+        rows_spreads(is,ipeak)=r;cols_spreads(is,ipeak)=c;
+        bestsigmas_spreads(is,ipeak)=sigmas(r);bestaus_spreads(is,ipeak)=taus(c);
+        llspreadsmax(is,ipeak)=max(max(max(llspreads(:,:,is,ipeak))));
+    end
+end
+%sum without the tau constraint:
+sumllspreadsmax=sum(llspreadsmax);
+
+% %find max ll for the spreads allowing single tau:
+sigmaspreads = nan(length(taus),length(spread2block),length(whichpeaks));
+llsumspreads_giventau=zeros(length(taus),length(whichpeaks));
+tauc=nan(size(whichpeaks));sigmac=nan(length(spread2block),length(whichpeaks));
+for ipeak=1:length(whichpeaks)
+    for itau=1:length(taus)
+        for is=1:length(spread2block)
+            sidx=find(llspreads(:,itau,is,ipeak)==max(llspreads(:,itau,is,ipeak)));
+            ll=llspreads(sidx,itau,is,ipeak);sigmaspreads(itau,is,ipeak)=sigmas(sidx);
+            llsumspreads_giventau(itau,ipeak)=llsumspreads_giventau(itau,ipeak)+ll;
+        end
+    end
+    tidx=find(llsumspreads_giventau(:,ipeak)==max(llsumspreads_giventau(:,ipeak)));
+    tauc(ipeak)=taus(tidx);
+    sigmac(:,ipeak)=sigmaspreads(tidx,:,ipeak);
+    llsumspreads_tauc(ipeak)=llsumspreads_giventau(tidx,ipeak);
+end
+% compare 3 tau + 3 sigmas versus 1 tau + 3 sigmas
+for ipeak=1:2
+    dof=2;
+    [H,pValue,stat,cValue] = lratiotest(sumllspreadsmax(ipeak),llsumspreads_tauc(ipeak),dof);
+   disp([whichpeaks{ipeak} ': chi^2=' num2str(stat) ', p=' num2str(pValue) ', dof=' num2str(dof)])
+end
+saveFolder = [Folder filesep 'spreads' filesep];
+save([saveFolder 'spreadsTauc'],'sigmac','tauc')
+
+% %find max ll for the spreads allowing single tau and single sigma:
+llsumspreads=squeeze(llspreads(:,:,1,:)+llspreads(:,:,2,:)+llspreads(:,:,3,:));
+for ipeak=1:length(whichpeaks)
+    [r,c]=find(llsumspreads(:,:,ipeak)==max(max(llsumspreads(:,:,ipeak))));
+    tauc2(ipeak)=taus(c);sigmac2(ipeak)=sigmas(r);
+    llsumspreads_c2(ipeak)=llsumspreads(r,c,ipeak);
+end
+% compare 1 tau + 3 sigmas versus 1 tau + 1 sigma
+for ipeak=1:2
+    dof=2;
+    [H,pValue,stat,cValue] = lratiotest(llsumspreads_tauc(ipeak),llsumspreads_c2(ipeak),dof);
+    disp([whichpeaks{ipeak} ': chi^2=' num2str(stat) ', p=' num2str(pValue) ', dof=' num2str(dof)])
+end
+
+% compare 3 tau + 3 sigmas versus 1 tau + 1 sigma
+for ipeak=1:2
+    dof=4;
+    [H,pValue,stat,cValue] = lratiotest(sumllspreadsmax(ipeak),llsumspreads_c2(ipeak),dof);
+    disp([whichpeaks{ipeak} ': chi^2=' num2str(stat) ', p=' num2str(pValue) ', dof=' num2str(dof)])
+end
+    %% Estimate bootstrap params constant tau
+    saveFolder = [Folder filesep 'spreads' filesep];
+    load([saveFolder 'llspreads_bootstrap'])
+    %calc best params
+    bestausboot=nan(size(ll,1),2);
+    bestsigmasboot=nan(size(ll,1),3,2);
+    llsum=zeros(size(ll,1),length(taus),2);
+    bestsigmasboot_pt=nan(size(ll,1),length(taus),3,2);
+    for ip=1:size(ll,1)
+        for ipeak=1:2
+            for itau=1:length(taus)
+                for ispread=1:3
+                    llp=squeeze(ll(ip,:,itau,ispread,ipeak));
+                    sidx=find(llp==(max(llp)));
+                    llsum(ip,itau,ipeak)=llsum(ip,itau,ipeak)+llp(sidx);
+                    bestsigmasboot_pt(ip,itau,ispread,ipeak)=sigmas(sidx);
+                end
+            end
+            tidx=find(llsum(ip,:,ipeak)==max(llsum(ip,:,ipeak)));
+            bestausboot(ip,ipeak)=taus(tidx);
+            bestsigmasboot(ip,:,ipeak) = bestsigmasboot_pt(ip,tidx,:,ipeak);
+        end
+    end
+    
+    bestsigmasboot_tauc = bestsigmasboot;
+    bestausboot_tauc = bestausboot;
+    save([saveFolder 'bestSigmasBoot_tauc'],'bestsigmasboot_tauc')
+    save([saveFolder 'bestTausBoot_tauc'],'bestausboot_tauc')
+        %% anova of lme for the bootstrap
+        %create table
+        saveFolder = [Folder filesep 'spreads' filesep];
+        load([saveFolder 'bestSigmasBoot_tauc'])
+        freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
+        meanfreqspreads = mean(freqspreads');
+        load([saveFolder 'spreadsTauc'],'sigmac','tauc')
+        bestsigmasboot=bestsigmasboot_tauc;
+        T=table;
+        for ip=1:size(bestsigmasboot,1)+1
+            for ispread=1:size(bestsigmasboot,2)
+                for ipeak=1:size(bestsigmasboot,3)
+                        tmp=struct;
+                        tmp.pot=ipeak;
+                        tmp.Cpot=categorical(ipeak);
+                        tmp.bootN=ip;
+                        tmp.CbootN=categorical(ip);
+                        tmp.cond=categorical(ispread);
+                        tmp.spreads=meanfreqspreads(ispread);
+                        tmp.range=tmp.spreads*4;
+                       switch ipeak
+                            case 1
+                                tmp.isN1 = 1;
+                                tmp.isP2 = 0;
+                            case 2
+                                tmp.isN1 = 0;
+                                tmp.isP2 = 1;
+                       end
+                    if ip<=size(bestsigmasboot,1)
+                        tmp.bestsig=bestsigmasboot(ip,ispread,ipeak);
+                       % disp([num2str(ip) ' small'])
+                    else
+                        %disp([num2str(ip) ' large'])
+                        tmp.bestsig=squeeze(sigmac(ispread,ipeak));
+                    end
+
+                    T=[T; struct2table(tmp)];
+
+                end
+            end
+        end
+formula = 'bestsig ~ isN1-1 + isP2-1 + range:isN1 + range:isP2 + (isN1-1|bootN) + (isP2-1|bootN) + (range:isN1-1|bootN) + (range:isP2-1|bootN)';
+lme=fitlme(T,formula);
+for i=1:length(lme.CoefficientNames)
+    disp(lme.CoefficientNames{i})
+%    d=lme.Coefficients.tStat(i)/sqrt(99);
+     d=lme.Coefficients.tStat(i)/sqrt(100);
+    disp(['Estimate=' num2str(lme.Coefficients.Estimate(i)) ', SE=' num2str(lme.Coefficients.SE(i)) ', F(1,' num2str(lme.Coefficients.DF(i)) ')= ' num2str(lme.Coefficients.tStat(i).^2) ', d=' num2str(d) ', p=' num2str(lme.Coefficients.pValue(i))])
+    disp(['CI=(' num2str(lme.Coefficients.Lower(i)) ',' num2str(lme.Coefficients.Upper(i)) ')'])
+    disp('')
+end
+
+disp('comparing intercepts')
+[p f df1 df2]=coefTest(lme,[1 -1 0 0]);d=sqrt(f)/sqrt(100);
+disp(['F(' num2str(df1) ',' num2str(df2) ')=' num2str(f) ', d=' num2str(d) ', p=' num2str(p)])
+disp('comparing spreads')
+[p f df1 df2]=coefTest(lme,[0 0 1 -1]);d=sqrt(f)/sqrt(100);
+disp(['F(' num2str(df1) ',' num2str(df2) ')=' num2str(f) ', d=' num2str(d) ', p=' num2str(p)])
+    %% Estimate permuted params constant tau
+    saveFolder = [Folder filesep 'spreads' filesep];
+    np=100;
+    tag = num2str(np);
+    load([saveFolder 'llspreads_scramble_' tag],'ll','spread2block','whichExp','scrambles')
+    
+    %calc best params
+    bestaus_scr=nan(np,2);
+    bestsigmas_scr=nan(np,3,2);
+    llsum=zeros(np,length(taus),2);
+    bestsigmas_scr_pt=nan(np,length(taus),3,2);
+    for ip=1:np
+        for ipeak=1:2
+            for itau=1:length(taus)
+                for ispread=1:3
+                    llp=squeeze(ll(ip,:,itau,ispread,ipeak));
+                    sidx=find(llp==(max(llp)));
+                    llsum(ip,itau,ipeak)=llsum(ip,itau,ipeak)+llp(sidx);
+                    bestsigmas_scr_pt(ip,itau,ispread,ipeak)=sigmas(sidx);
+                end
+            end
+            tidx=find(llsum(ip,:,ipeak)==max(llsum(ip,:,ipeak)));
+            bestaus_scr(ip,ipeak)=taus(tidx);
+            bestsigmas_scr(ip,:,ipeak) = bestsigmas_scr_pt(ip,tidx,:,ipeak);
+        end
+    end
+    
+    bestsigmas_scr_tauc = bestsigmas_scr;
+    bestaus_scr_tauc = bestaus_scr;
+    save([saveFolder 'bestSigmas_scr_tauc'],'bestsigmas_scr_tauc')
+    save([saveFolder 'bestTaus_scr_tauc'],'bestaus_scr_tauc')
+    %% plot fig5C (formely 4D) for constant tau
+    
+    colorsnp = {[0.9608 0.5098 0.1882],[0.2353 0.7059 0.2941]};
+   % colorsprm = {[1,0.8784,0.7882],[0.8941,0.9608,0.9020]};
+    colorsprm = {[0.8706    0.7569    0.6706],[0.7922    0.8706    0.8000]};
+    
+    saveFolder = [Folder filesep 'spreads' filesep];
+    load([saveFolder 'spreadsTauc'],'sigmac','tauc')
+    load([saveFolder 'bestSigmasBoot_tauc'],'bestsigmasboot_tauc')
+    load([saveFolder 'bestSigmas_scr_tauc'],'bestsigmas_scr_tauc')
+
+    freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
+    meanfreqspreads = mean(freqspreads');
+    ranges = meanfreqspreads*4;
+    whichXplot = 'range';%can be 'spread' or 'range'. Generated for range
+    whichYplot = 'sigma';%can be 'tau' or 'sigma'. Generated for both
+    
+    switch whichXplot
+        case 'spread'
+            Xplot = meanfreqspreads;
+        case 'range'
+            Xplot = ranges;
+    end
+    switch whichYplot
+        case 'sigma'
+            iY = 1;
+        case 'tau'
+            iY = 2;
+    end
+    
+    %First, the scrambled:
+    errorbars = nan(length(meanfreqspreads),2);
+    for ipeak = 1:2
+        for ispread = 1:length(meanfreqspreads) 
+            %CIs = Confidence(bestParams(:,ispread,ipeak,1));
+            %errorbars(ispread,ipeak) = mean(bestParams(:,ispread,ipeak,1)) - CIs(1);
+            x = bestsigmas_scr_tauc(:,ispread,ipeak);
+            errorbars(ispread,ipeak) = nanstd(x)/sqrt(length(x(~isnan(x))));
+        end
+    end
+    ERPfigure;
+    hold on
+    h1=plot(Xplot,mean(bestsigmas_scr_tauc(:,:,1)),'-.','Color',colorsprm{1},'linewidth',1);
+    h2=plot(Xplot,mean(bestsigmas_scr_tauc(:,:,2)),'-.','Color',colorsprm{2},'linewidth',1);
+    plot(Xplot,mean(bestsigmas_scr_tauc(:,:,1)),'.','Color',colorsprm{1},'MarkerSize',22,'HandleVisibility','off')
+    plot(Xplot,mean(bestsigmas_scr_tauc(:,:,2)),'.','Color',colorsprm{2},'MarkerSize',22,'HandleVisibility','off')
+    errorbar(Xplot,mean(bestsigmas_scr_tauc(:,:,1)),errorbars(:,1),'.','Color',colorsprm{1},'HandleVisibility','off')
+    errorbar(Xplot,mean(bestsigmas_scr_tauc(:,:,2)),errorbars(:,1),'.','Color',colorsprm{2},'HandleVisibility','off')
+    switch whichXplot
+        case 'spread'
+            switch whichYplot
+                case 'sigma'
+                    
+                    ylim([2 14])
+                    xlim([2 14])
+                    plot([2 14],[2 14],'k:')    
+            end
+            title(['\' whichYplot ' as a function of frequency intervals'])
+            xlabel('Mean inter-neighbor intervals (range/4, semitones)')
+        case 'range'
+            switch whichYplot
+                case 'sigma'
+                    xlim([8 54]);ylim([2 14])
+                    plot([8 54],[2 14],'k:')
+                case 'tau'
+                    xlim([8 54]);ylim([-5 10])
+
+            end
+            
+            title(['\' whichYplot ' as a function of range'])
+            xlabel('Range (semitones)')
+    end
+    switch whichYplot
+        case 'sigma'
+            ylabel(['Best fit \' whichYplot ' (semitones)'])
+        case 'tau'
+            ylabel(['Best fit \' whichYplot ' (seconds)'])
+    end
+    
+    %now add the real data:
+    %calc error bars from bootstrap
+    errorbars = nan(length(meanfreqspreads),2);
+    for ipeak = 1:2
+        for ispread = 1:length(meanfreqspreads) 
+            %CIs = Confidence(bestParams(:,ispread,ipeak,1));
+            %errorbars(ispread,ipeak) = mean(bestParams(:,ispread,ipeak,1)) - CIs(1);
+            x = bestsigmasboot_tauc(:,ispread,ipeak);
+            errorbars(ispread,ipeak) = nanstd(x);
+        end
+    end
+   
+    h3=plot(Xplot,sigmac(:,1),'Color',colorsnp{1},'linewidth',2);
+    h4=plot(Xplot,sigmac(:,2),'Color',colorsnp{2},'linewidth',2);
+    plot(Xplot,sigmac(:,1),'.','Color',colorsnp{1},'MarkerSize',22,'HandleVisibility','off')
+    plot(Xplot,sigmac(:,2),'.','Color',colorsnp{2},'MarkerSize',22,'HandleVisibility','off')
+    errorbar(Xplot,sigmac(:,1),errorbars(:,1),'.','Color',colorsnp{1},'HandleVisibility','off')
+    errorbar(Xplot,sigmac(:,2),errorbars(:,1),'.','Color',colorsnp{2},'HandleVisibility','off')
+    hl=legend([h3,h4,h1,h2],{'N1','P2','N1 permuted','P2 permuted'},'Location','se');
+    set(gca,'fontsize',16)
+    set(hl,'fontsize',14)
+    saveas(gcf,[saveFolder 'best' whichYplot 'Spreads_boot+scrambled_tauc'],'png')
+    saveas(gcf,[saveFolder 'best' whichYplot 'Spreads_boot+scrambled_tauc'],'pdf')
+    %% compare permuted slopes to 0
+    
+    saveFolder = [Folder filesep 'spreads' filesep];
+    %load([saveFolder 'spreadsTauc'],'sigmac','tauc')
+   % load([saveFolder 'bestSigmasBoot_tauc'],'bestsigmasboot_tauc')
+    load([saveFolder 'bestSigmas_scr_tauc'],'bestsigmas_scr_tauc')
+
+    freqspreads = [[10,10,9,10];[7 7 7 7];[4,4,3,3]];
+    meanfreqspreads = mean(freqspreads');
+    x=meanfreqspreads.*4;
+    clear lme
+    for ipeak=1:2
+        disp('')
+        disp(num2str(ipeak))
+        y = bestsigmas_scr_tauc(:,:,ipeak);
+        T=table;
+        for ii=1:size(y,1)
+            for jj=1:size(y,2)
+                tmp=struct;
+                tmp.range=x(jj);
+                tmp.sigma=y(ii,jj);
+                T=[T; struct2table(tmp)];
+            end
+        end
+        lme{ipeak}=fitlme(T,'sigma~1+range');
+        disp([whichpeaks{ipeak} ': Scrambles slope: ' num2str(lme{ipeak}.Coefficients.Estimate(2)) ' CI: ' num2str(lme{ipeak}.Coefficients.Lower(2)) ' ' num2str(lme{ipeak}.Coefficients.Upper(2)) ])
+        disp(['tStat: ' num2str(lme{ipeak}.Coefficients.tStat(2)) ' DF: ' num2str(lme{ipeak}.Coefficients.DF(2)) ' pVal: ' num2str(lme{ipeak}.Coefficients.pValue(2))])
+        %[H,P,CI,STATS] = ttest((slopes_boots(2:end,ipeak)),mean(slopes_scrambles(2:end,ipeak)));
+        %disp(['boot slope:' num2str(mean(slopes_boots(2:end,ipeak))) ' CI: ' num2str(CI(1)) ' ' num2str(CI(2))])    
+
+    end
+
+    

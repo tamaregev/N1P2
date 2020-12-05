@@ -4,7 +4,7 @@ mkdir(Folder)
 addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 %% compute single trials peak amps 
 %no need to run again
-ExpN = 1;
+ExpN = 3;
 Expdir = [Folder filesep 'Exp' num2str(ExpN)];
 mkdir(Expdir)
 

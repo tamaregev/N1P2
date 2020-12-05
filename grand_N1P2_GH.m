@@ -2,6 +2,10 @@
 
 %% definitions
 Definitions_N1P2
+addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
+addpath('S:\Lab-Shared\Experiments\MMNchromaF\Analysis')
+addpath('S:\Lab-Shared\Experiments\MMNchroma\Analysis')
+
 Subjects = 1:37;
 
 %for grand -

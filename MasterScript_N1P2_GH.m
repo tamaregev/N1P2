@@ -4,7 +4,7 @@
 % Preprocessing of data from experiment N1P2
 
 %% Definitions:
-addpath('L:\Experiments\N1P2\Analysis')
+addpath('S:\Lab-Shared\Experiments\N1P2\Analysis\N1P2_GH')
 Definitions_N1P2
 %% BDF Detrend
 

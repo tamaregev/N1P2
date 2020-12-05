@@ -1,5 +1,5 @@
 function plotPeaksNei(peaksFolder,ExpN,includeSubjects,ibls,pos)
-%this function is used in P2 modulation Figure
+%this function is used in P2modulationFig.m
 %transformation matrix:
 load([peaksFolder filesep 'peaks_allExp'])
 readfrom = NPallexp_peak_meanz;
@@ -22,7 +22,8 @@ fromynei=-0.22;toynei=0.5;
 
 h=ERPfigure;
 set(h,'Position',pos)
-nnei=2;%plot until this neighbor
+nnei=4;%calc until this neighbor
+nnei1=1;nnei2=2;%plot diff between these neighbors
 cmap=parula(4);
 for isp=1:length(ibls)
     subplot(1,length(ibls),isp)
@@ -48,9 +49,10 @@ for isp=1:length(ibls)
     %plot
     clear hp
     ddatas=nan(1,2);derrdatas=nan(size(neiPeakall,1),2);
+    
     for ipeak = 1:length(whichpeaks)
         data = squeeze(nanmean(neiPeak(1:nnei,:,ipeak),2));
-        ddata=data(2)-data(1);ddatas(ipeak)=ddata;
+        ddata=data(nnei2)-data(nnei1);ddatas(ipeak)=ddata;
 %         %calc CI across participants:
          errdata = squeeze(nanmean(neiPeakall(:,1:nnei,:,ipeak),3));
          derrdata = errdata(:,2) - errdata(:,1);derrdatas(:,ipeak)=derrdata;
@@ -78,8 +80,8 @@ for isp=1:length(ibls)
         %plot([1 2],data-data(1),'.','Color',peakColors{ipeak},'MarkerSize',26,'HandleVisibility','off')
         errorbar(ipeak,ddata,err,':','Color','k','linewidth',lwe,'HandleVisibility','off')
         ylim([fromynei toynei])
-        xlim([0 nnei+1])
-        if isp==1
+        xlim([0 length(whichpeaks)+1])
+        if isp==1 && ipeak==1
            ylabel({'Z-scored Voltage (\muV)', 'relative to 1 neighbor'})
        end
         set(gca,'xtick',[1 2],'xticklabels',{'1', '2'})

@@ -28,7 +28,7 @@ for ich=chooses
     fprintf(fid,'%s',char); fclose(fid);
 end
 choose = 2;
-compare(lmes{3},lmes{2})
+compare(lmes{2},lmes{1})
 rFormula='Voltage ~ dist_mean + size_jump + dist_mean:size_jump + (1|subject) + (dist_mean-1|subject) + (size_jump-1|subject)';
 N1lme = fitlme(T,rFormula,'Exclude',T.isN1==0);
 P2lme = fitlme(T,rFormula,'Exclude',T.isN1==1);
@@ -522,7 +522,7 @@ d=lme.Coefficients.tStat/sqrt(lme.Coefficients.DF(1)); disp(d)
 formula = 'Voltage ~ Potential*subject + dist_mean:isN1 + dist_mean:isP2';
 lm=fitlm(nT,formula);
 
-%% for only Exp 3
+%% interactions with range - for only Exp 3
 nSubj=30;
 formula =       'Voltage ~ isN1-1 + isP2-1 + dist_mean:isN1 + dist_mean:isP2 + size_jump:isN1 + size_jump:isP2 + dist_mean:size_jump:isN1 + dist_mean:size_jump:isP2 + (isN1-1|subject) + (isP2-1|subject) + (dist_mean:isN1-1|subject) + (dist_mean:isP2-1|subject) + (size_jump:isN1-1|subject) + (size_jump:isP2-1|subject)';%8 
 
@@ -543,7 +543,7 @@ end
 SaveResultsFolder = 'S:\Lab-Shared\Experiments\N1P2\Analysis\MixedModel\ResultsFiles';
 choose = 3;
 
-stats=compare(lmess{3},lmess{1});
+stats=compare(lmess{3},lmess{1})
 %% comaprisons
 choose =3;
 lme=lmess{choose};
